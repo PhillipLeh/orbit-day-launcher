@@ -508,7 +508,6 @@ function toggleDay(btn){ const day=btn.dataset.day; btn.classList.toggle('active
 function checkStartButton(){ const sel=document.querySelectorAll('.ki-card.selected:not(.hidden)').length===0&&activeBundleIdx<0; document.getElementById('btnStart').disabled=closeMode?false:sel; }
 function updateDots(){ ALL_PROGRAMS.forEach(p=>{ const card=document.querySelector(`.ki-card[data-id="${p.id}"]`); const dot=document.getElementById('dot-'+p.id); if(!dot) return; dot.setAttribute('opacity',(!hiddenCards.has(p.id)&&card&&card.classList.contains('selected'))?'1':'0'); }); }
 function toggle(card){ if(suppressNextClick){ suppressNextClick=false; return; } if(hiddenCards.has(card.dataset.id)) return; if(activeBundleIdx>=0) deactivateBundle(); card.classList.toggle('selected'); checkStartButton(); updateDots(); updateStartBtn(); }
-function hideCard(event,id){ event.stopPropagation(); const card=document.querySelector(`.ki-card[data-id="${id}"]`); if(!card) return; hiddenCards.add(id); card.classList.add('hidden'); card.classList.remove('selected'); buildOrbitSVG(); checkStartButton(); updateStartBtn(); markDirty(); }
 
 // ── Start-Button ──
 function updateStartBtn(){
