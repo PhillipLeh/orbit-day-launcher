@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Orbit Day Launcher – Setup</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;background:#0a0a1a;color:#00e5ff;font-family:'Segoe UI',Arial,sans-serif;overflow:hidden}
+    body{display:flex;justify-content:center;align-items:center}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.04) 1px,transparent 1px);background-size:40px 40px;z-index:0}
+    .corner{position:fixed;width:40px;height:40px;border-color:rgba(0,229,255,0.3);border-style:solid;z-index:2}
+    .corner.tl{top:24px;left:24px;border-width:2px 0 0 2px}.corner.tr{top:24px;right:24px;border-width:2px 2px 0 0}
+    .corner.bl{bottom:24px;left:24px;border-width:0 0 2px 2px}.corner.br{bottom:24px;right:24px;border-width:0 2px 2px 0}
+
+    .wrap{position:relative;z-index:1;width:580px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0}
+
+    .logo-label{font-size:10px;letter-spacing:8px;color:rgba(0,229,255,0.3);margin-bottom:10px}
+    h1{font-size:20px;font-weight:300;letter-spacing:3px;margin-bottom:6px}
+    .sub{font-size:11px;color:rgba(0,229,255,0.35);letter-spacing:1px;margin-bottom:24px}
+
+    /* ── Radar-SVG ── */
+    .radar-wrap{position:relative;width:180px;height:180px;margin-bottom:20px}
+    .radar-wrap svg{width:180px;height:180px;display:block}
+
+    /* Orbit-Ring */
+    .r-orbit{fill:none;stroke:rgba(0,229,255,0.25);stroke-width:1;stroke-dasharray:5 4}
+    /* Innenkreis */
+    .r-inner{fill:#0d0d22;stroke:rgba(0,229,255,0.5);stroke-width:1.5}
+    /* Radar-Sweep */
+    .r-sweep{transform-origin:90px 90px;animation:sweep 2s linear infinite}
+    @keyframes sweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    /* Radar-Ping-Ringe */
+    .r-ping{fill:none;stroke:#00e5ff;stroke-width:1;opacity:0;transform-origin:90px 90px}
+    .r-ping1{animation:ping 2s ease-out 0s infinite}
+    .r-ping2{animation:ping 2s ease-out 0.66s infinite}
+    .r-ping3{animation:ping 2s ease-out 1.33s infinite}
+    @keyframes ping{0%{r:8;opacity:0.7}100%{r:42;opacity:0}}
+    /* Orbit-Punkte auf dem Ring */
+    .r-dot{transition:opacity 0.5s ease;opacity:0}
+    .r-dot.visible{opacity:1}
+
+    .scan-text{font-size:11px;letter-spacing:3px;color:rgba(0,229,255,0.45);margin-bottom:20px;min-height:18px}
+
+    /* App-Liste */
+    .app-list{display:none;flex-direction:column;gap:5px;width:100%;max-height:260px;overflow-y:auto;margin-bottom:16px;padding-right:2px}
+    .app-list::-webkit-scrollbar{width:3px}
+    .app-list::-webkit-scrollbar-thumb{background:rgba(0,229,255,0.2);border-radius:2px}
+    .cat-label{font-size:10px;letter-spacing:3px;color:rgba(0,229,255,0.25);margin-top:6px;margin-bottom:2px;text-align:left;padding-left:2px}
+    .app-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid rgba(0,229,255,0.1);border-radius:5px;cursor:pointer;transition:all 0.2s;user-select:none;background:rgba(0,229,255,0.02)}
+    .app-item:hover{border-color:rgba(0,229,255,0.35);background:rgba(0,229,255,0.06)}
+    .app-item.selected{border-color:#00e5ff;background:rgba(0,229,255,0.09);box-shadow:0 0 7px rgba(0,229,255,0.12)}
+    .a-dot{width:7px;height:7px;border-radius:50%;background:rgba(0,229,255,0.25);flex-shrink:0;transition:background 0.2s}
+    .app-item.selected .a-dot{background:#00e5ff}
+    .a-name{font-size:12px;letter-spacing:1px;color:rgba(0,229,255,0.55);flex:1;text-align:left}
+    .app-item.selected .a-name{color:#00e5ff}
+    .a-tag{font-size:9px;color:rgba(0,229,255,0.2);letter-spacing:1px}
+    .a-check{width:15px;height:15px;border:1px solid rgba(0,229,255,0.2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:transparent;transition:all 0.2s;flex-shrink:0}
+    .app-item.selected .a-check{background:#00e5ff;border-color:#00e5ff;color:#0a0a1a}
+
+    .row-actions{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:10px}
+    .lnk{font-size:10px;letter-spacing:2px;color:rgba(0,229,255,0.3);cursor:pointer;transition:color 0.2s}
+    .lnk:hover{color:#00e5ff}
+
+    .none-msg{font-size:11px;color:rgba(0,229,255,0.25);letter-spacing:1px;margin-bottom:16px;display:none}
+
+    .btn-go{background:transparent;border:1px solid #00e5ff;color:#00e5ff;font-family:'Segoe UI',Arial,sans-serif;font-size:11px;letter-spacing:5px;padding:12px 48px;cursor:pointer;border-radius:4px;transition:all 0.25s;text-transform:uppercase;display:none}
+    .btn-go:hover{background:rgba(0,229,255,0.1);box-shadow:0 0 18px rgba(0,229,255,0.3)}
+    .btn-skip{font-size:10px;letter-spacing:2px;color:rgba(0,229,255,0.2);cursor:pointer;margin-top:10px;transition:color 0.2s;display:none}
+    .btn-skip:hover{color:rgba(0,229,255,0.5)}
+  </style>
+</head>
+<body>
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+
+  <div class="wrap">
+    <div class="logo-label">ORBIT DAY LAUNCHER</div>
+    <h1>Willkommen</h1>
+    <p class="sub">Wir suchen nach installierten Programmen auf deinem PC.</p>
+
+    <!-- Radar -->
+    <div class="radar-wrap">
+      <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+        <!-- Orbit-Ring -->
+        <circle class="r-orbit" cx="90" cy="90" r="76"/>
+        <!-- Ping-Ringe (im Innenkreis) -->
+        <circle class="r-ping r-ping1" cx="90" cy="90" r="8"/>
+        <circle class="r-ping r-ping2" cx="90" cy="90" r="8"/>
+        <circle class="r-ping r-ping3" cx="90" cy="90" r="8"/>
+        <!-- Radar-Sweep: Sektor -->
+        <g class="r-sweep">
+          <path d="M90,90 L90,14 A76,76 0 0,1 155,128 Z"
+            fill="url(#radarGrad)" opacity="0.35"/>
+        </g>
+        <!-- Innenkreis (über Sweep) -->
+        <circle class="r-inner" cx="90" cy="90" r="44"/>
+        <!-- Kreuz-Linien im Innenkreis -->
+        <line x1="90" y1="50" x2="90" y2="130" stroke="rgba(0,229,255,0.12)" stroke-width="1"/>
+        <line x1="50" y1="90" x2="130" y2="90" stroke="rgba(0,229,255,0.12)" stroke-width="1"/>
+        <!-- Orbit-Punkte (max 10, gleichmäßig verteilt) -->
+        <g id="orbitDots"></g>
+        <!-- Gradient für Sweep -->
+        <defs>
+          <radialGradient id="radarGrad" cx="90" cy="90" r="76" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.0"/>
+            <stop offset="100%" stop-color="#00e5ff" stop-opacity="0.6"/>
+          </radialGradient>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="scan-text" id="scanText">Durchsuche deinen PC...</div>
+
+    <div class="none-msg" id="noneMsg">Keine bekannten Programme gefunden. Manuell hinzufügen im Reiter Programme.</div>
+
+    <div class="row-actions" id="rowActions" style="display:none">
+      <span class="lnk" onclick="toggleAll(true)">Alle auswählen</span>
+      <span class="lnk" onclick="toggleAll(false)">Alle abwählen</span>
+    </div>
+    <div class="app-list" id="appList"></div>
+
+    <button class="btn-go"   id="btnGo"   onclick="finish()">LOS GEHT'S</button>
+    <div    class="btn-skip" id="btnSkip" onclick="finish()">Überspringen – später hinzufügen</div>
+  </div>
+
+  <script>
+    const { invoke } = window.__TAURI__.core;
+    let detected = [];
+
+    const CAT_COLORS = {
+      'KI':'#ff6b35','Browser':'#4d9fff','Entwicklung':'#7c4dff',
+      'Office':'#39d98a','Kommunikation':'#00e5ff','Unterhaltung':'#f0a500',
+      'Gaming':'#ff4444','Produktivität':'#a0ff00','Medien':'#ff69b4'
+    };
+
+    // Orbit-Punkte gleichmäßig verteilen (max 10)
+    function addOrbitDot(index, total, color) {
+      const n     = Math.min(total, 10);
+      const angle = (index * (360 / n) - 90) * Math.PI / 180;
+      const r     = 76;
+      const cx    = 90 + r * Math.cos(angle);
+      const cy    = 90 + r * Math.sin(angle);
+      const svg   = document.getElementById('orbitDots');
+      const dot   = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', cx.toFixed(1));
+      dot.setAttribute('cy', cy.toFixed(1));
+      dot.setAttribute('r', '5');
+      dot.setAttribute('fill', color || '#00e5ff');
+      dot.classList.add('r-dot');
+      svg.appendChild(dot);
+      // Kurze Verzögerung für animiertes Erscheinen
+      setTimeout(() => dot.classList.add('visible'), 50);
+    }
+
+    async function scan() {
+      try {
+        detected = await invoke('detect_installed_apps');
+        const total = Math.min(detected.length, 10);
+
+        if (!detected.length) {
+          document.getElementById('scanText').textContent = 'Keine Programme gefunden.';
+          document.getElementById('noneMsg').style.display = 'block';
+        } else {
+          // Punkte nacheinander erscheinen lassen
+          detected.slice(0, 10).forEach((app, i) => {
+            setTimeout(() => {
+              addOrbitDot(i, total, CAT_COLORS[app.category] || '#00e5ff');
+              if (i === detected.length - 1 || i === 9) {
+                document.getElementById('scanText').textContent =
+                  `${Math.min(detected.length, 99)} Programme gefunden`;
+              }
+            }, 300 + i * 200);
+          });
+          setTimeout(renderList, 300 + Math.min(detected.length, 10) * 200 + 400);
+          return;
+        }
+      } catch(e) {
+        document.getElementById('scanText').textContent = 'Suche fehlgeschlagen.';
+      }
+      showFinishButtons();
+    }
+
+    function renderList() {
+      document.getElementById('scanText').textContent =
+        `${Math.min(detected.length, 99)} Programme gefunden`;
+      const list = document.getElementById('appList');
+      list.innerHTML = '';
+      const byCat = {};
+      detected.forEach(a => { if (!byCat[a.category]) byCat[a.category]=[]; byCat[a.category].push(a); });
+      Object.entries(byCat).forEach(([cat, apps]) => {
+        const lbl = document.createElement('div');
+        lbl.className = 'cat-label'; lbl.textContent = cat.toUpperCase();
+        list.appendChild(lbl);
+        apps.forEach(app => {
+          const color = CAT_COLORS[cat] || '#00e5ff';
+          const el = document.createElement('div');
+          el.className = 'app-item selected'; el.dataset.id = app.id;
+          el.innerHTML = `<div class="a-dot" style="background:${color}"></div>
+            <div class="a-name">${app.name}</div>
+            <div class="a-tag">${app.app_type==='store'?'Store':'.exe'}</div>
+            <div class="a-check">✓</div>`;
+          el.onclick = () => el.classList.toggle('selected');
+          list.appendChild(el);
+        });
+      });
+      document.getElementById('rowActions').style.display = 'flex';
+      list.style.display = 'flex';
+      showFinishButtons();
+    }
+
+    function toggleAll(sel) {
+      document.querySelectorAll('.app-item').forEach(el => el.classList.toggle('selected', sel));
+    }
+
+    function showFinishButtons() {
+      document.getElementById('btnGo').style.display   = 'inline-block';
+      document.getElementById('btnSkip').style.display = 'block';
+    }
+
+    async function finish() {
+      const selected = [...document.querySelectorAll('.app-item.selected')]
+        .map(el => detected.find(a => a.id === el.dataset.id)).filter(Boolean);
+      const settings = { onboardingDone: true, onboardingPrograms: selected };
+      await invoke('save_settings', { settings: JSON.stringify(settings) });
+      await invoke('open_main_window');
+    }
+
+    setTimeout(scan, 600);
+  </script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orbit Day Launcher</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+
+  <div class="save-disk" id="saveDisk" onclick="saveAll()" title="Speichern">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="7 3 7 8 15 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="quit-btn" onclick="window.__TAURI__.core.invoke('quit_app')" title="Beenden">&#10005;</div>
+
+  <!-- Internet-Statussymbol (unten links, 5 Balken) -->
+  <div class="net-status" id="netStatus" title="Internetverbindung">
+    <svg width="28" height="22" viewBox="0 0 28 22" fill="none">
+      <rect class="net-bar" x="1"  y="16" width="3.6" height="6"  rx="1"/>
+      <rect class="net-bar" x="6.6" y="12.5" width="3.6" height="9.5" rx="1"/>
+      <rect class="net-bar" x="12.2" y="9" width="3.6" height="13" rx="1"/>
+      <rect class="net-bar" x="17.8" y="5" width="3.6" height="17" rx="1"/>
+      <rect class="net-bar" x="23.4" y="1" width="3.6" height="21" rx="1"/>
+      <g class="net-cross">
+        <line x1="3" y1="3" x2="25" y2="19" stroke-width="2.6" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </div>
+
+  <!-- Seitenmenü -->
+  <div class="sidemenu" id="sidemenu">
+    <div class="sidemenu-header">
+      <span>EINSTELLUNGEN</span>
+      <div class="sidemenu-close" onclick="toggleMenu()">&#10005;</div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" id="tab-settings"  onclick="switchTab('settings')">Anzeige</div>
+      <div class="tab"        id="tab-programs"  onclick="switchTab('programs')">Programme</div>
+      <div class="tab"        id="tab-bundles"   onclick="switchTab('bundles')">Bundles</div>
+      <div class="tab"        id="tab-profiles"  onclick="switchTab('profiles')">Profile</div>
+    </div>
+
+    <!-- ── Anzeige ── -->
+    <div class="tab-content active" id="content-settings">
+
+      <div class="setting-group">
+        <div class="setting-label">Erscheinungsbild</div>
+        <div class="size-options">
+          <button class="size-btn active" id="theme-system" onclick="setTheme('system')">System</button>
+          <button class="size-btn" id="theme-dark" onclick="setTheme('dark')">Dunkel</button>
+          <button class="size-btn" id="theme-light" onclick="setTheme('light')">Hell</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Akzentfarbe</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
+          <button class="accent-dot" style="background:#00e5ff" onclick="setAccent('#00e5ff')" title="Cyan"></button>
+          <button class="accent-dot" style="background:#39d98a" onclick="setAccent('#39d98a')" title="Grün"></button>
+          <button class="accent-dot" style="background:#ff8c42" onclick="setAccent('#ff8c42')" title="Orange"></button>
+          <div class="accent-slot" id="accentSlot0"></div>
+          <div class="accent-slot" id="accentSlot1"></div>
+          <input type="color" id="accentSlotInput" class="color-input" value="#00e5ff" onchange="saveAccentSlot(this.value)"/>
+          <button class="size-btn" style="padding:4px 10px;font-size:10px;margin-left:4px" onclick="setAccent('reset')">Standard</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Fenstergröße</div>
+        <div class="size-options">
+          <button class="size-btn" id="szbtn-small"      onclick="setSize(1000,750,'small')">Klein</button>
+          <button class="size-btn" id="szbtn-medium"     onclick="setSize(1300,900,'medium')">Mittel</button>
+          <button class="size-btn" id="szbtn-large"      onclick="setSize(1600,1100,'large')">Groß</button>
+          <button class="size-btn" id="szbtn-fullscreen" onclick="setSize(0,0,'fullscreen')">Vollbild</button>
+        </div>
+        <label class="toggle-row" style="margin-top:4px">
+          <span>Auto-Größe</span>
+          <div class="toggle" id="toggle-autosize" onclick="toggleAutoSize()"><div class="toggle-knob"></div></div>
+        </label>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Inhalts-Zoom</div>
+        <div class="size-options">
+          <button class="size-btn" id="zoom-small"         onclick="setZoom('small')">Klein</button>
+          <button class="size-btn active" id="zoom-medium" onclick="setZoom('medium')">Mittel</button>
+          <button class="size-btn" id="zoom-large"         onclick="setZoom('large')">Groß</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="toggle-row">
+          <span>Immer im Vordergrund</span>
+          <div class="toggle active" id="toggle-ontop" onclick="toggleAlwaysOnTop()"><div class="toggle-knob"></div></div>
+        </label>
+      </div>
+
+      <div class="setting-group">
+        <label class="toggle-row">
+          <span>Autostart mit Windows</span>
+          <div class="toggle" id="toggle-autostart" onclick="toggleAutostart()"><div class="toggle-knob"></div></div>
+        </label>
+        <div class="autostart-days">
+          <div class="setting-label" style="margin-bottom:6px">Wochentage</div>
+          <div class="days-row">
+            <div class="day-btn active" data-day="Mo" onclick="toggleDay(this)">Mo</div>
+            <div class="day-btn active" data-day="Di" onclick="toggleDay(this)">Di</div>
+            <div class="day-btn active" data-day="Mi" onclick="toggleDay(this)">Mi</div>
+            <div class="day-btn active" data-day="Do" onclick="toggleDay(this)">Do</div>
+            <div class="day-btn active" data-day="Fr" onclick="toggleDay(this)">Fr</div>
+            <div class="day-btn" data-day="Sa" onclick="toggleDay(this)">Sa</div>
+            <div class="day-btn" data-day="So" onclick="toggleDay(this)">So</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orbit-Einstellungen -->
+      <div class="setting-group">
+        <div class="setting-label">Orbit-Anzahl</div>
+        <div class="size-options">
+          <button class="size-btn" id="orb-1" onclick="setOrbitCount(1)">1</button>
+          <button class="size-btn active" id="orb-2" onclick="setOrbitCount(2)">2</button>
+          <button class="size-btn" id="orb-3" onclick="setOrbitCount(3)">3</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Orbit-Größen (Radius)</div>
+        <div class="orbit-size-row">
+          <span class="orb-label">Orbit 1</span>
+          <input type="range" class="orbit-slider" id="orbSize0" min="60" max="160" value="90" oninput="updateOrbitSize(0,this.value)"/>
+          <span class="orb-val" id="orbSizeVal0">90</span>
+        </div>
+        <div class="orbit-size-row" id="orbSizeRow1">
+          <span class="orb-label">Orbit 2</span>
+          <input type="range" class="orbit-slider" id="orbSize1" min="80" max="200" value="140" oninput="updateOrbitSize(1,this.value)"/>
+          <span class="orb-val" id="orbSizeVal1">140</span>
+        </div>
+        <div class="orbit-size-row" id="orbSizeRow2" style="display:none">
+          <span class="orb-label">Orbit 3</span>
+          <input type="range" class="orbit-slider" id="orbSize2" min="120" max="260" value="200" oninput="updateOrbitSize(2,this.value)"/>
+          <span class="orb-val" id="orbSizeVal2">200</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Orbit-Geschwindigkeit</div>
+        <div class="orbit-size-row">
+          <span class="orb-label">Orbit 1</span>
+          <input type="range" class="orbit-slider" id="orbSpeed0" min="1" max="5" step="1" value="3" oninput="updateOrbitSpeed(0,this.value)"/>
+          <span class="orb-val" id="orbSpeedVal0">●●●○○</span>
+        </div>
+        <div class="orbit-size-row" id="orbSpeedRow1">
+          <span class="orb-label">Orbit 2</span>
+          <input type="range" class="orbit-slider" id="orbSpeed1" min="1" max="5" step="1" value="2" oninput="updateOrbitSpeed(1,this.value)"/>
+          <span class="orb-val" id="orbSpeedVal1">●●○○○</span>
+        </div>
+        <div class="orbit-size-row" id="orbSpeedRow2" style="display:none">
+          <span class="orb-label">Orbit 3</span>
+          <input type="range" class="orbit-slider" id="orbSpeed2" min="1" max="5" step="1" value="1" oninput="updateOrbitSpeed(2,this.value)"/>
+          <span class="orb-val" id="orbSpeedVal2">●○○○○</span>
+        </div>
+      </div>
+
+      <!-- Programmansicht -->
+      <div class="setting-group">
+        <div class="setting-label">Programmansicht</div>
+        <div class="size-options">
+          <button class="size-btn active" id="layout-pyramid" onclick="setLayout('pyramid')">Pyramide</button>
+          <button class="size-btn" id="layout-grid" onclick="setLayout('grid')">Rechteck</button>
+        </div>
+        <div id="gridColsSetting" style="display:none;margin-top:8px">
+          <div class="setting-label" style="margin-bottom:4px">Programme pro Reihe (max. 7)</div>
+          <div class="size-options">
+            <button class="size-btn" id="cols-3" onclick="setGridCols(3)">3</button>
+            <button class="size-btn active" id="cols-4" onclick="setGridCols(4)">4</button>
+            <button class="size-btn" id="cols-5" onclick="setGridCols(5)">5</button>
+            <button class="size-btn" id="cols-6" onclick="setGridCols(6)">6</button>
+            <button class="size-btn" id="cols-7" onclick="setGridCols(7)">7</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Startverzögerung Einzelprogramme</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <input type="range" id="globalDelay" min="0" max="10" step="1" value="0" oninput="updateGlobalDelay(this.value)" style="flex:1"/>
+          <span class="orb-val" id="globalDelayVal" style="min-width:46px">0.0s</span>
+        </div>
+        <div style="margin-top:3px;font-size:9px;color:rgba(0,229,255,0.25);letter-spacing:0.5px">Pause zwischen einzeln gestarteten Programmen. Bundles nutzen ihren eigenen Wert.</div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Tastenkürzel (Öffnen/Verstecken)</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <span style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+            <span class="sc-fixed-key">Strg</span>
+            <span style="color:rgba(0,229,255,0.4);font-size:12px">+</span>
+            <span class="sc-fixed-key">Alt</span>
+            <span style="color:rgba(0,229,255,0.4);font-size:12px">+</span>
+          </span>
+          <input type="text" id="scKey" class="bundle-input" value="O" readonly tabindex="-1" style="flex:1;padding:5px 8px;font-size:11px;text-align:center;opacity:0.8" placeholder="—"/>
+          <button class="size-btn" id="scCaptureBtn" style="flex-shrink:0;padding:6px 10px" onclick="startCapture()">Belegen</button>
+        </div>
+        <div class="orb-val" id="scPreview" style="margin-top:5px;font-size:10px;color:rgba(0,229,255,0.4);letter-spacing:1px">Strg+Alt+O</div>
+        <div style="margin-top:3px;font-size:9px;color:rgba(0,229,255,0.25);letter-spacing:0.5px">Dritte Taste frei wählbar: Buchstabe oder Zahl 1–9</div>
+      </div>
+
+      <button class="btn-save" onclick="saveAll()">Einstellungen speichern</button>
+    </div>
+
+    <!-- ── Programme ── -->
+    <div class="tab-content" id="content-programs">
+      <div class="prog-tab-actions">
+        <div class="setting-label">Installierte Programme</div>
+        <button class="btn-rescan" onclick="rescanPrograms()">↻ Neu suchen</button>
+      </div>
+      <div id="programList" class="program-list"></div>
+      <div class="setting-label" style="margin-top:12px">Manuell hinzufügen</div>
+      <div class="add-prog-form">
+        <input type="text" id="newProgName" class="bundle-input" placeholder="Name (z.B. Firefox)" maxlength="30"/>
+        <div class="add-prog-row">
+          <input type="text" id="newProgPath" class="bundle-input" placeholder="Pfad zur .exe" style="flex:1"/>
+          <button class="size-btn" style="flex-shrink:0;padding:8px 10px" onclick="pickExeFile()">&#128190;</button>
+        </div>
+        <button class="btn-save" onclick="addProgramManually()">+ Hinzufügen</button>
+      </div>
+      <button class="btn-save" style="margin-top:8px" onclick="saveAll()">Einstellungen speichern</button>
+    </div>
+
+    <!-- ── Bundles ── -->
+    <div class="tab-content" id="content-bundles">
+      <div class="setting-label">Meine Bundles</div>
+      <div id="bundleList" class="bundle-list"></div>
+      <div class="bundle-editor" id="bundleEditor" style="display:none">
+        <div class="bundle-editor-title" id="bundleEditorTitle"></div>
+        <div class="setting-label" style="margin-top:8px">Farbe</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div id="bundleColorPreview" class="color-preview" onclick="document.getElementById('bundleColorInput').click()"></div>
+          <input type="color" id="bundleColorInput" class="color-input" oninput="updateEditingBundleColor(this.value)"/>
+          <span style="font-size:10px;letter-spacing:1px;color:rgba(0,229,255,0.35)">Bundle-Farbe</span>
+        </div>
+        <div class="setting-label">Programme im Bundle</div>
+        <div id="bundleProgList" class="bundle-prog-select"></div>
+        <div class="setting-label" style="margin-top:8px">Startverzögerung im Bundle</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <input type="range" id="bundleEditDelay" min="0" max="10" step="1" value="0" oninput="document.getElementById('bundleEditDelayVal').textContent=(this.value*0.5).toFixed(1)+'s'" style="flex:1"/>
+          <span class="orb-val" id="bundleEditDelayVal" style="min-width:46px">0.0s</span>
+        </div>
+        <button class="btn-save" style="margin-top:10px" onclick="saveBundleEdits()">Änderungen speichern</button>
+        <div class="lnk" style="margin-top:6px;text-align:center" onclick="closeBundleEditor()">Abbrechen</div>
+      </div>
+      <div class="bundle-creator" id="bundleCreator">
+        <input type="text" id="bundleNameInput" class="bundle-input" placeholder="Bundle-Name..." maxlength="20"/>
+        <div class="setting-label" style="margin-top:10px">
+          Programme &amp; Reihenfolge
+          <span style="font-size:9px;color:rgba(0,229,255,0.25);display:block;margin-top:2px;letter-spacing:1px">
+            In Startreihenfolge anklicken · letztes = vorderstes Fenster
+          </span>
+        </div>
+        <div id="bundleProgramSelect" class="bundle-prog-select"></div>
+        <div class="setting-label" style="margin-top:10px">Startverzögerung im Bundle</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <input type="range" id="bundleCreateDelay" min="0" max="10" step="1" value="0" oninput="document.getElementById('bundleCreateDelayVal').textContent=(this.value*0.5).toFixed(1)+'s'" style="flex:1"/>
+          <span class="orb-val" id="bundleCreateDelayVal" style="min-width:46px">0.0s</span>
+        </div>
+        <button class="btn-save" style="margin-top:10px" onclick="saveBundle()">Bundle speichern</button>
+      </div>
+      <button class="btn-new-bundle" onclick="showBundleCreator()">+ Neues Bundle</button>
+      <div class="setting-label" style="margin-top:14px">Bundle-Farben</div>
+      <div id="bundleColorList" class="color-editor-list"></div>
+      <button class="btn-save" style="margin-top:8px" onclick="saveAll()">Einstellungen speichern</button>
+    </div>
+
+    <!-- ── Profile ── -->
+    <div class="tab-content" id="content-profiles">
+      <div class="setting-label">Meine Profile</div>
+      <div style="font-size:9px;color:rgba(0,229,255,0.3);letter-spacing:0.5px;margin-bottom:8px">Startet ein Bundle automatisch zur eingestellten Uhrzeit.</div>
+      <div id="profileList" class="bundle-list"></div>
+      <div class="bundle-creator" id="profileCreator" style="margin-top:10px">
+        <input type="text" id="profileNameInput" class="bundle-input" placeholder="Profil-Name (z.B. Arbeit)..." maxlength="20"/>
+        <div class="setting-label" style="margin-top:10px">Bundle wählen</div>
+        <select id="profileBundleSelect" class="bundle-input" style="margin-top:4px"></select>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <div style="flex:1">
+            <div class="setting-label">Uhrzeit</div>
+            <input type="time" id="profileTimeInput" class="bundle-input" value="09:00" style="margin-top:4px"/>
+          </div>
+          <div style="flex:1">
+            <div class="setting-label">Aktiv an Tagen</div>
+            <div class="size-options" id="profileDays" style="margin-top:4px;gap:3px">
+              <button class="day-btn" data-day="Mo" onclick="this.classList.toggle('active')">Mo</button>
+              <button class="day-btn" data-day="Di" onclick="this.classList.toggle('active')">Di</button>
+              <button class="day-btn" data-day="Mi" onclick="this.classList.toggle('active')">Mi</button>
+              <button class="day-btn" data-day="Do" onclick="this.classList.toggle('active')">Do</button>
+              <button class="day-btn" data-day="Fr" onclick="this.classList.toggle('active')">Fr</button>
+              <button class="day-btn" data-day="Sa" onclick="this.classList.toggle('active')">Sa</button>
+              <button class="day-btn" data-day="So" onclick="this.classList.toggle('active')">So</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn-save" style="margin-top:12px" onclick="saveProfile()">Profil speichern</button>
+      </div>
+      <button class="btn-save" style="margin-top:8px" onclick="saveAll()">Einstellungen speichern</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+  <!-- ── Profil-Countdown-Hinweis ── -->
+  <div id="profileCountdown" class="profile-countdown">
+    <div class="pc-box">
+      <div class="pc-title">PROFIL WIRD GESTARTET</div>
+      <div class="pc-name" id="pcName">—</div>
+      <div class="pc-timer"><span id="pcSeconds">10</span>s</div>
+      <div class="pc-btns">
+        <button class="pc-btn pc-cancel" onclick="cancelProfileSwitch()">Abbrechen</button>
+        <button class="pc-btn pc-now" onclick="confirmProfileSwitch()">Jetzt starten</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Hauptinhalt ── -->
+  <div class="container">
+    <div class="zoom-wrap zoom-medium" id="zoomWrap">
+
+      <!-- SVG Orbit-System -->
+      <div class="icon-wrap" id="svgWrap">
+        <svg id="mainSvg" xmlns="http://www.w3.org/2000/svg">
+          <!-- Orbit-Gruppen werden per JS gerendert -->
+          <g id="orbitGroup"></g>
+          <!-- Innenkreis + Power-Symbol (statisch, immer oben) -->
+          <circle id="innerCircle" cx="0" cy="0" r="52"/>
+          <g id="powerSymbol">
+            <path d="M -24.2 0 A 28 28 0 1 1 24.2 0" fill="none" stroke-width="8" stroke-linecap="round"/>
+            <line x1="0" y1="-16" x2="0" y2="-2" stroke-width="8" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+
+      <div id="screen-select">
+        <div class="mode-switch">
+          <button class="mode-btn active" id="mode-start" onclick="setMode('start')">▶ Starten</button>
+          <button class="mode-btn" id="mode-close" onclick="setMode('close')">■ Schließen</button>
+        </div>
+        <div class="sys-label" id="sysLabel">SYSTEM INITIALIZE</div>
+        <div class="headline" id="headline">Was soll heute starten?</div>
+        <div id="kiOptions" class="ki-options pyramid"></div>
+        <div class="bundle-quick" id="bundleQuick"></div>
+        <button class="btn-start" id="btnStart" onclick="handleStartBtn()" disabled>ALLES STARTEN</button>
+        <button class="btn-start btn-close-all" id="btnCloseAll" onclick="closeAll()">ALLES SCHLIESSEN</button>
+      </div>
+
+      <div id="screen-load">
+        <div class="sys-label">SYSTEM INITIALIZE</div>
+        <div class="status" id="status">Initialisiere<span id="dots"></span></div>
+        <div class="bar-wrap"><div class="bar-fill" id="bar"></div></div>
+        <div class="percent" id="percent">0%</div>
+        <div class="ready-text" id="ready">&#10022; &nbsp;SYSTEMS ONLINE&nbsp; &#10022;</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

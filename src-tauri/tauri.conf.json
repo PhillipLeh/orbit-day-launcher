@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "orbit-day-launcher",
+  "version": "0.1.0",
+  "identifier": "com.luxos_official.orbit-day-launcher",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "url": "index.html",
+        "title": "Orbit Day Launcher",
+        "width": 1100,
+        "height": 800,
+        "resizable": true,
+        "center": true,
+        "alwaysOnTop": true,
+        "decorations": true,
+        "visible": true
+      },
+      {
+        "label": "onboarding",
+        "url": "onboarding.html",
+        "title": "Orbit Day Launcher – Setup",
+        "width": 700,
+        "height": 600,
+        "resizable": false,
+        "center": true,
+        "alwaysOnTop": true,
+        "decorations": true,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
