@@ -6,6 +6,7 @@
   --bg-secondary:#0d0d22;
   --text-strong:#ffffff;
   --swatch-border-rgb:255,255,255; /* Ränder/Schatten an Farbmustern */
+  --card-label:#aac8d0;            /* Programm-Kartenname, unausgewählt */
 }
 [data-theme="light"]{
   /* Light Theme: gedämpft & augenfreundlich (Palette "Gedämpftes Grau") */
@@ -15,6 +16,7 @@
   --bg-secondary:#dce1e3;
   --text-strong:#19363c;
   --swatch-border-rgb:20,40,45; /* dunkle Ränder, da auf hellem Grund sichtbar */
+  --card-label:#3a555e;         /* dunkel-gedämpft, auf hellem Grund klar lesbar */
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;background:var(--bg-primary);color:rgb(var(--accent-rgb));font-family:'Segoe UI',Arial,sans-serif;overflow:hidden}
@@ -167,8 +169,12 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .ki-close:hover{color:rgb(var(--danger-rgb)) !important;border-color:rgb(var(--danger-rgb)) !important;background:rgba(var(--danger-rgb),0.1)}
 .ki-card.selected{border-color:var(--ki-color,rgb(var(--accent-rgb)));background:rgba(var(--ki-rgb,0,229,255),0.1);box-shadow:0 0 12px rgba(var(--ki-rgb,0,229,255),0.18)}
 .ki-card.hidden{display:none}
-.ki-name{font-size:11px;letter-spacing:1px;margin-bottom:9px;color:#aac8d0}
+.ki-name{font-size:11px;letter-spacing:1px;margin-bottom:9px;color:var(--card-label)}
 .ki-card.selected .ki-name{color:var(--ki-color,rgb(var(--accent-rgb)))}
+/* Light-Mode: ausgewählte Programmfarbe zur Textfarbe abdunkeln, damit das
+   Label bei JEDER (auch hellen) Programmfarbe lesbar bleibt. Farb-Identität
+   bleibt über Rahmen, Häkchen und Orbit-Punkt erhalten. */
+[data-theme="light"] .ki-card.selected .ki-name{color:color-mix(in srgb, var(--ki-color,rgb(var(--accent-rgb))) 45%, var(--text-strong))}
 .ki-check{width:16px;height:16px;border:1px solid rgba(var(--accent-rgb),0.3);border-radius:3px;margin:0 auto;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
 .ki-card.selected .ki-check{background:var(--ki-color,rgb(var(--accent-rgb)));border-color:var(--ki-color,rgb(var(--accent-rgb)))}
 .ki-card.selected .ki-check::after{content:'✓';color:var(--bg-primary);font-size:9px;font-weight:bold}
@@ -203,7 +209,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .pc-timer span{color:rgb(var(--accent-rgb))}
 .pc-btns{display:flex;gap:10px}
 .pc-btn{flex:1;padding:9px;border-radius:8px;font-size:11px;letter-spacing:1.5px;cursor:pointer;background:transparent;transition:all 0.2s}
-.pc-cancel{border:1px solid rgba(var(--danger-rgb),0.5);color:#ff6666}
+.pc-cancel{border:1px solid rgba(var(--danger-rgb),0.5);color:rgb(var(--danger-rgb))}
 .pc-cancel:hover{background:rgba(var(--danger-rgb),0.1)}
 .pc-now{border:1px solid rgb(var(--accent-rgb));color:rgb(var(--accent-rgb))}
 .pc-now:hover{background:rgba(var(--accent-rgb),0.1)}
@@ -213,7 +219,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .mode-btn{padding:7px 18px;border-radius:8px;font-size:11px;letter-spacing:1.5px;cursor:pointer;background:transparent;border:1px solid rgba(var(--accent-rgb),0.25);color:rgba(var(--accent-rgb),0.5);transition:all 0.2s}
 .mode-btn:hover{border-color:rgba(var(--accent-rgb),0.5);color:rgba(var(--accent-rgb),0.8)}
 .mode-btn.active{border-color:rgb(var(--accent-rgb));color:rgb(var(--accent-rgb));background:rgba(var(--accent-rgb),0.08);box-shadow:0 0 14px rgba(var(--accent-rgb),0.2)}
-#mode-close.active{border-color:rgb(var(--danger-rgb));color:#ff6666;background:rgba(var(--danger-rgb),0.08);box-shadow:0 0 14px rgba(var(--danger-rgb),0.2)}
+#mode-close.active{border-color:rgb(var(--danger-rgb));color:rgb(var(--danger-rgb));background:rgba(var(--danger-rgb),0.08);box-shadow:0 0 14px rgba(var(--danger-rgb),0.2)}
 .btn-close-all{display:none;margin-top:10px;border-color:rgba(var(--danger-rgb),0.6)!important;color:rgb(var(--danger-rgb))!important}
 .btn-close-all.visible{display:inline-block}
 .btn-close-all:hover{background:rgba(var(--danger-rgb),0.1)!important;box-shadow:0 0 18px rgba(var(--danger-rgb),0.3)!important}
