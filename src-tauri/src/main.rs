@@ -16,23 +16,34 @@ fn dirs_home() -> Option<std::path::PathBuf> {
 #[tauri::command]
 fn detect_installed_apps() -> Vec<DetectedApp> {
     let mut apps: Vec<DetectedApp> = Vec::new();
-    let store_apps = vec![
-        ("Claude_pzs8sxrjxfjjc!Claude",                   "Claude",      "KI"),
-        ("OpenAI.Codex_2p2nqsd0c76g0!App",                "Codex",       "KI"),
-        ("electron.app.Antigravity",                       "Antigravity", "KI"),
-        ("Microsoft.VisualStudioCode_8wekyb3d8bbwe!Code",  "VS Code",     "Entwicklung"),
-        ("Microsoft.WindowsTerminal_8wekyb3d8bbwe!App",    "Terminal",    "Entwicklung"),
-        ("Spotify.Spotify_zpdnekdrzrea0!Spotify",          "Spotify",     "Unterhaltung"),
-    ];
-    for (app_id, name, category) in &store_apps {
-        let output = Command::new("powershell")
-            .args(["-WindowStyle","Hidden","-Command",
-                &format!("Get-StartApps | Where-Object {{$_.AppID -eq '{}'}}", app_id)])
-            .output();
-        if let Ok(out) = output {
-            if String::from_utf8_lossy(&out.stdout).trim().len() > 10 {
-                apps.push(DetectedApp { id: app_id.to_string(), name: name.to_string(), category: category.to_string(), app_type: "store".to_string(), path: format!("shell:AppsFolder\\{}", app_id) });
-            }
+    // Alle installierten Store-/UWP-Apps dynamisch über den Windows-"Apps-Ordner"
+    // (Get-StartApps = shell:AppsFolder) ermitteln — statt einer festen, schnell
+    // veraltenden Liste. Ausgabe je Zeile als "Name<TAB>AppID" (UTF-8 erzwingen,
+    // sonst werden Umlaute zerstört).
+    let output = Command::new("powershell")
+        .args(["-NoProfile", "-WindowStyle", "Hidden", "-Command",
+            "[Console]::OutputEncoding=[Text.Encoding]::UTF8; Get-StartApps | ForEach-Object { \"$($_.Name)`t$($_.AppID)\" }"])
+        .output();
+    if let Ok(out) = output {
+        let text = String::from_utf8_lossy(&out.stdout);
+        for line in text.lines() {
+            let line = line.trim_end_matches('\r');
+            let mut it = line.splitn(2, '\t');
+            let name = it.next().unwrap_or("").trim();
+            let app_id = it.next().unwrap_or("").trim();
+            if name.is_empty() || app_id.is_empty() { continue; }
+            // Echte AUMID = "<PaketFamilie>!<AppId>"; die Paketfamilie enthält
+            // immer einen '_' (Publisher-Hash). So fallen Falschtreffer raus,
+            // deren '!' nur Teil des Anzeigenamens ist (z.B. "avast! Antivirus").
+            let family = app_id.split('!').next().unwrap_or("");
+            if !app_id.contains('!') || !family.contains('_') { continue; }
+            apps.push(DetectedApp {
+                id: app_id.to_string(),
+                name: name.to_string(),
+                category: "Store-Apps".to_string(),
+                app_type: "store".to_string(),
+                path: format!("shell:AppsFolder\\{}", app_id),
+            });
         }
     }
     let exe_apps = vec![
