@@ -353,7 +353,7 @@ function addProgramManually(){
 // ── Bundles ──
 function renderBundleList(){
   const list=document.getElementById('bundleList'); if(!list) return; list.innerHTML='';
-  if(!bundles.length){list.innerHTML='<div style="font-size:10px;color:rgba(0,229,255,0.18);text-align:center;padding:6px;letter-spacing:1px">Noch keine Bundles</div>';return;}
+  if(!bundles.length){list.innerHTML='<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4);text-align:center;padding:6px;letter-spacing:1px">Noch keine Bundles</div>';return;}
   bundles.forEach((b,i)=>{
     const el=document.createElement('div'); el.className='bundle-item'+(activeBundleIdx===i?' active':'');
     el.innerHTML=`<div class="bundle-item-info" onclick="selectBundle(${i})"><div class="bundle-item-name">${b.name.toUpperCase()}</div><div class="bundle-item-apps">${b.programs.map(id=>ALL_PROGRAMS.find(p=>p.id===id)?.name||id).join(' · ')}</div></div><div class="bundle-item-btns"><div class="bundle-edit-btn" onclick="openBundleEditor(${i})">&#9998;</div><div class="bundle-item-del" onclick="deleteBundle(event,${i})">✕</div></div>`;
@@ -363,7 +363,7 @@ function renderBundleList(){
 }
 function renderBundleColorList(){
   const list=document.getElementById('bundleColorList'); if(!list) return; list.innerHTML='';
-  if(!bundles.length){list.innerHTML='<div style="font-size:10px;color:rgba(0,229,255,0.18)">Erst Bundles erstellen</div>';return;}
+  if(!bundles.length){list.innerHTML='<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4)">Erst Bundles erstellen</div>';return;}
   bundles.forEach((b,i)=>{
     const color=bundleColors[b.name]||'#00e5ff';
     const el=document.createElement('div'); el.className='color-editor-item';
@@ -374,7 +374,7 @@ function renderBundleColorList(){
 function updateBundleColor(name,color,idx){ bundleColors[name]=color; const prev=document.querySelector(`#bci-${idx}`); if(prev) prev.previousElementSibling.style.background=color; renderBundleQuick(); markDirty(); }
 function renderBundleQuick(){
   const q=document.getElementById('bundleQuick'); if(!q) return; q.innerHTML='';
-  bundles.forEach((b,i)=>{ const color=bundleColors[b.name]||'#00e5ff'; const rgb=hexToRgb(color); const btn=document.createElement('button'); btn.className='bundle-quick-btn'+(activeBundleIdx===i?' active':''); btn.textContent=b.name; btn.style.borderColor=activeBundleIdx===i?color:`rgba(${rgb},0.4)`; btn.style.color=activeBundleIdx===i?color:`rgba(${rgb},0.7)`; if(activeBundleIdx===i) btn.style.background=`rgba(${rgb},0.08)`; btn.onclick=()=>selectBundle(i); q.appendChild(btn); });
+  bundles.forEach((b,i)=>{ const color=bundleColors[b.name]||'#00e5ff'; const rgb=hexToRgb(color); const btn=document.createElement('button'); btn.className='bundle-quick-btn'+(activeBundleIdx===i?' active':''); btn.textContent=b.name; btn.style.setProperty('--bc',color); btn.style.setProperty('--bc-rgb',rgb); btn.style.borderColor=activeBundleIdx===i?color:`rgba(${rgb},0.4)`; if(activeBundleIdx===i) btn.style.background=`rgba(${rgb},0.08)`; btn.onclick=()=>selectBundle(i); q.appendChild(btn); });
 }
 function openBundleEditor(idx){
   editingBundleIdx=idx; const b=bundles[idx]; const editor=document.getElementById('bundleEditor');
@@ -417,7 +417,7 @@ function renderProfileBundleOptions(){
 }
 function renderProfileList(){
   const list=document.getElementById('profileList'); if(!list) return; list.innerHTML='';
-  if(!profiles.length){ list.innerHTML='<div style="font-size:10px;color:rgba(0,229,255,0.18);text-align:center;padding:6px;letter-spacing:1px">Noch keine Profile</div>'; return; }
+  if(!profiles.length){ list.innerHTML='<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4);text-align:center;padding:6px;letter-spacing:1px">Noch keine Profile</div>'; return; }
   profiles.forEach((p,i)=>{
     const exists=bundles.some(b=>b.name===p.bundle);
     const el=document.createElement('div'); el.className='bundle-item';
