@@ -107,15 +107,32 @@ fn check_internet() -> bool {
 fn close_app(app_id: String, app_type: String, path: String) -> Result<(), String> {
     if app_type == "url" { return Ok(()); } // URL/Protokoll-Einträge haben keinen eigenen Prozess
     if app_type == "store" || app_id.contains('!') {
-        // Store-App: Paketname (Teil vor '!') ermitteln und zugehörige Prozesse beenden
+        // Store-/UWP-App: Der Prozessname weicht oft vom Paketnamen ab
+        // (z.B. Paket "5319275A.WhatsAppDesktop" -> Prozess "WhatsApp"), daher
+        // NICHT über den Namen matchen. UWP-Apps liegen immer unter
+        // C:\Program Files\WindowsApps\<Name>_<Version>_<Arch>__<Publisher> —
+        // der Installpfad enthält also den Paket-Namensteil. Wir beenden alle
+        // Prozesse, deren Executable unter \WindowsApps\<Name> liegt.
+        //
+        // app_id ist die AUMID "<PackageFamilyName>!<AppId>". PackageFamilyName
+        // = "<Name>_<PublisherHash>"; der WindowsApps-Ordner beginnt mit <Name>.
         let package = app_id.split('!').next().unwrap_or(&app_id);
-        let family = package.split('_').next().unwrap_or(package);
+        let name_part = package.split('_').next().unwrap_or(package);
+        // Single Quotes im Paketnamen entschärfen (PowerShell-String-Sicherheit).
+        let safe = name_part.replace('\'', "''");
+        // Get-CimInstance liefert ExecutablePath zuverlässiger als Get-Process.Path
+        // (auch für Prozesse, deren .Path im WebView-Kontext null wäre).
+        // Anker am Versions-Trenner: der WindowsApps-Ordner heißt <Name>_<Version>…,
+        // also matcht "<Name>_" exakt dieses Paket und nicht Geschwister wie
+        // "<Name>Preview". (${{p}} statt $p_, sonst läse PowerShell die Variable "p_".)
         let ps = format!(
-            "Get-Process | Where-Object {{ $_.Path -like '*{}*' -or $_.Name -like '*{}*' }} | Stop-Process -Force -ErrorAction SilentlyContinue",
-            family, family
+            "$p='{}'; Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | \
+             Where-Object {{ $_.ExecutablePath -like \"*\\WindowsApps\\${{p}}_*\" }} | \
+             ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}",
+            safe
         );
         Command::new("powershell")
-            .args(["-WindowStyle", "Hidden", "-Command", &ps])
+            .args(["-NoProfile", "-WindowStyle", "Hidden", "-Command", &ps])
             .spawn().map_err(|e| e.to_string())?;
     } else {
         // .exe: Prozessnamen aus Pfad ableiten und per taskkill beenden
