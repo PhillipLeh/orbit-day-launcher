@@ -320,13 +320,53 @@ function removeProgram2(event,id){ event.stopPropagation(); removeProgram(id); }
 async function rescanPrograms(){
   const btn=document.querySelector('.btn-rescan'); if(btn) btn.textContent='⌛ Suche...';
   try{
-    const found=await invoke('detect_installed_apps'); let added=0;
-    found.forEach(app=>{ if(!ALL_PROGRAMS.find(p=>p.id===app.id)){ ALL_PROGRAMS.push({id:app.id,name:app.name,color:CAT_COLORS[app.category]||'#00e5ff',appType:app.app_type,path:app.path,category:app.category}); deletedBasePrograms=deletedBasePrograms.filter(d=>d!==app.id); added++; } });
-    renderKiCards(); renderProgramList();
-    if(btn) btn.textContent=`↻ ${added} neu gefunden`;
-    setTimeout(()=>{if(btn) btn.textContent='↻ Neu suchen';},3000);
-    if(added>0) markDirty();
-  }catch(e){ if(btn) btn.textContent='↻ Fehler'; setTimeout(()=>{if(btn) btn.textContent='↻ Neu suchen';},2000); }
+    const found=await invoke('detect_installed_apps');
+    const neu=found.filter(app=>!ALL_PROGRAMS.find(p=>p.id===app.id));
+    if(btn) btn.textContent='↻ Neu suchen';
+    if(!neu.length){ if(btn){ btn.textContent='↻ keine neuen'; setTimeout(()=>{btn.textContent='↻ Neu suchen';},2500); } return; }
+    openAppPicker(neu);
+  }catch(e){ if(btn){ btn.textContent='↻ Fehler'; setTimeout(()=>{btn.textContent='↻ Neu suchen';},2000); } }
+}
+
+// Auswahl-Dialog: zeigt gefundene Apps mit Häkchen; nur Angehakte werden übernommen.
+// (Namen via textContent gesetzt → kein HTML-Injection-Risiko.)
+function openAppPicker(list){
+  const ov=document.createElement('div'); ov.className='app-picker-overlay';
+  const panel=document.createElement('div'); panel.className='app-picker';
+  const head=document.createElement('div'); head.className='app-picker-head';
+  head.innerHTML='<span>Apps gefunden</span><span class="app-picker-close" title="Schließen">&#10005;</span>';
+  const sub=document.createElement('div'); sub.className='app-picker-sub';
+  sub.textContent=`${list.length} neue App(s) — wähle aus, was in den Orbit soll.`;
+  const items=document.createElement('div'); items.className='app-picker-list';
+  list.forEach((app,idx)=>{
+    const row=document.createElement('label'); row.className='app-picker-item';
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.dataset.idx=idx;
+    const nm=document.createElement('span'); nm.className='app-picker-name'; nm.textContent=app.name;
+    const ct=document.createElement('span'); ct.className='app-picker-cat'; ct.textContent=app.category||'';
+    row.append(cb,nm,ct); items.appendChild(row);
+  });
+  const actions=document.createElement('div'); actions.className='app-picker-actions';
+  const selAll=document.createElement('button'); selAll.className='app-picker-selall'; selAll.textContent='Alle';
+  const addBtn=document.createElement('button'); addBtn.className='app-picker-add'; addBtn.textContent='Hinzufügen';
+  actions.append(selAll,addBtn);
+  panel.append(head,sub,items,actions); ov.appendChild(panel); document.body.appendChild(ov);
+
+  const close=()=>ov.remove();
+  head.querySelector('.app-picker-close').onclick=close;
+  ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
+  selAll.onclick=()=>{ const boxes=items.querySelectorAll('input'); const allOn=[...boxes].every(b=>b.checked); boxes.forEach(b=>b.checked=!allOn); selAll.textContent=allOn?'Alle':'Keine'; };
+  addBtn.onclick=()=>{
+    let added=0;
+    items.querySelectorAll('input:checked').forEach(cb=>{
+      const app=list[+cb.dataset.idx];
+      if(app && !ALL_PROGRAMS.find(p=>p.id===app.id)){
+        ALL_PROGRAMS.push({id:app.id,name:app.name,color:CAT_COLORS[app.category]||'#00e5ff',appType:app.app_type,path:app.path,category:app.category});
+        deletedBasePrograms=deletedBasePrograms.filter(d=>d!==app.id); added++;
+      }
+    });
+    if(added){ renderKiCards(); renderProgramList(); markDirty(); }
+    close();
+  };
 }
 async function pickExeFile(){ try{ const {open}=window.__TAURI__.dialog; const sel=await open({multiple:false,filters:[{name:'Programme & Verknüpfungen',extensions:['exe','lnk','url']}]}); if(sel) document.getElementById('newProgPath').value=sel; }catch(e){console.error(e);} }
 function addProgramManually(){
