@@ -338,12 +338,19 @@ function openAppPicker(list){
   const sub=document.createElement('div'); sub.className='app-picker-sub';
   sub.textContent=`${list.length} neue App(s) — wähle aus, was in den Orbit soll.`;
   const items=document.createElement('div'); items.className='app-picker-list';
-  list.forEach((app,idx)=>{
-    const row=document.createElement('label'); row.className='app-picker-item';
-    const cb=document.createElement('input'); cb.type='checkbox'; cb.dataset.idx=idx;
-    const nm=document.createElement('span'); nm.className='app-picker-name'; nm.textContent=app.name;
-    const ct=document.createElement('span'); ct.className='app-picker-cat'; ct.textContent=app.category||'';
-    row.append(cb,nm,ct); items.appendChild(row);
+  // Nach Kategorie gruppieren (feste Reihenfolge; Unbekanntes ans Ende).
+  const order=['KI','Entwicklung','Browser','Kommunikation','Unterhaltung','Produktivität','Tools','Sonstige'];
+  const groups={};
+  list.forEach((app,idx)=>{ const c=app.category||'Sonstige'; (groups[c]||(groups[c]=[])).push({app,idx}); });
+  Object.keys(groups).sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);}).forEach(cat=>{
+    const h=document.createElement('div'); h.className='app-picker-cat-head'; h.textContent=cat;
+    items.appendChild(h);
+    groups[cat].forEach(({app,idx})=>{
+      const row=document.createElement('label'); row.className='app-picker-item';
+      const cb=document.createElement('input'); cb.type='checkbox'; cb.dataset.idx=idx;
+      const nm=document.createElement('span'); nm.className='app-picker-name'; nm.textContent=app.name;
+      row.append(cb,nm); items.appendChild(row);
+    });
   });
   const actions=document.createElement('div'); actions.className='app-picker-actions';
   const selAll=document.createElement('button'); selAll.className='app-picker-selall'; selAll.textContent='Alle';

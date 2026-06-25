@@ -13,6 +13,33 @@ fn dirs_home() -> Option<std::path::PathBuf> {
     std::env::var("USERPROFILE").ok().map(std::path::PathBuf::from)
 }
 
+// Windows-Ballast, der über Get-StartApps auftaucht, aber keine echte App ist.
+// Match über den Paket-Namensteil (vor dem '_') → sprach- und versionsunabhängig.
+const BLOCKED_PACKAGES: &[&str] = &[
+    "MicrosoftWindows.Client.CBS",        // "Erste Schritte", "Windows-Sicherung"
+    "MicrosoftWindows.Client.CoreAI",     // "Klick-und-Los"
+    "Microsoft.GetHelp",                  // "Hilfe anfordern"
+    "MicrosoftCorporationII.QuickAssist", // "Remotehilfe"
+    "windows.immersivecontrolpanel",      // "Einstellungen"
+    "Microsoft.XboxGamingOverlay",        // "Game Bar"
+    "Microsoft.SecHealthUI",              // "Windows-Sicherheit"
+];
+
+// Grobe Kategorisierung anhand von Schlüsselwörtern in Anzeigename + Paketname.
+// Erste passende Regel gewinnt; ohne Treffer "Sonstige".
+fn categorize_app(name: &str, family: &str) -> &'static str {
+    let s = format!("{} {}", name, family).to_lowercase();
+    let any = |kws: &[&str]| kws.iter().any(|k| s.contains(k));
+    if any(&["claude", "codex", "openai", "copilot", "chatgpt", "gemini", "perplexity"]) { return "KI"; }
+    if any(&["edge", "chrome", "firefox", "brave", "opera", "browser"]) { return "Browser"; }
+    if any(&["vscode", "vs code", "terminal", "powershell", "devhome", "python", "git ", "docker", "wsl", "android studio"]) { return "Entwicklung"; }
+    if any(&["teams", "whatsapp", "telegram", "discord", "slack", "outlook", "mail", "communicationsapps", "zoom", "skype", "signal", "yourphone", "phone"]) { return "Kommunikation"; }
+    if any(&["spotify", "netflix", "zunemusic", "zunevideo", "filme", "video", "music", "minecraft", "xbox", "gaming", "steam", "clipchamp", "media", "wiedergabe", "photos", "foto"]) { return "Unterhaltung"; }
+    if any(&["todo", "stickynotes", "note", "kalender", "calendar", "onenote", "office", "word", "excel", "powerpoint", "powerautomate", "alarms", "uhr", "clock"]) { return "Produktivität"; }
+    if any(&["calculator", "paint", "screensketch", "snipping", "camera", "soundrecorder", "weather", "news", "store", "nvidia", "realtek", "dts", "armoury", "aura", "translucent", "control"]) { return "Tools"; }
+    "Sonstige"
+}
+
 #[tauri::command]
 fn detect_installed_apps() -> Vec<DetectedApp> {
     let mut apps: Vec<DetectedApp> = Vec::new();
@@ -37,10 +64,15 @@ fn detect_installed_apps() -> Vec<DetectedApp> {
             // deren '!' nur Teil des Anzeigenamens ist (z.B. "avast! Antivirus").
             let family = app_id.split('!').next().unwrap_or("");
             if !app_id.contains('!') || !family.contains('_') { continue; }
+            // Klar erkennbarer Windows-Ballast (Stubs/Overlays/Einstellungen), der
+            // keine echte App ist — über den sprachunabhängigen Paket-Namensteil
+            // (vor dem '_') ausschließen.
+            let name_part = family.split('_').next().unwrap_or("");
+            if BLOCKED_PACKAGES.contains(&name_part) { continue; }
             apps.push(DetectedApp {
                 id: app_id.to_string(),
                 name: name.to_string(),
-                category: "Store-Apps".to_string(),
+                category: categorize_app(name, family).to_string(),
                 app_type: "store".to_string(),
                 path: format!("shell:AppsFolder\\{}", app_id),
             });
