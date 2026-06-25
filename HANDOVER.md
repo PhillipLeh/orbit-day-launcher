@@ -95,14 +95,14 @@ Pro Aufgabe ein Branch → PR → squash-merge:
 - **PR #4** `feat(detect)`: `detect_installed_apps` findet **alle** installierten Store-/UWP-Apps
   dynamisch via `Get-StartApps` (statt fester AUMID-Liste, die veraltet war). „Suchen" öffnet
   einen **Auswahl-Dialog** (`openAppPicker`) mit Häkchen statt alles automatisch hinzuzufügen.
-
-### Offen / noch nicht gemerged
 - **PR #5** `feat(detect)`: Kategorisierung der gefundenen Apps (KI, Entwicklung, Browser,
   Kommunikation, Unterhaltung, Produktivität, Tools, Sonstige) + **Blockliste** für
   Windows-Ballast (Erste Schritte, Hilfe anfordern, Klick-und-Los, Einstellungen, Game Bar,
   Remotehilfe, Windows-Sicherheit). Picker gruppiert nach Kategorie.
-  → **Branch `feat/app-categories`**, kompiliert & per Trockenlauf verifiziert (39 saubere Apps),
-  wartet auf realen Test + Merge-Freigabe durch den Nutzer.
+  → Gemerged. **Real per E2E getestet am 2026-06-25** (`npm run tauri dev` + Computer-Use):
+  „Neu suchen" → 38 gefundene Apps korrekt nach Kategorie gruppiert, keine Windows-Ballast-Einträge
+  sichtbar, Checkbox-Auswahl + „Hinzufügen" legt neue Karte im Orbit an, Entfernen über die
+  Programme-Liste funktioniert ebenfalls.
 
 ---
 
@@ -110,7 +110,9 @@ Pro Aufgabe ein Branch → PR → squash-merge:
 
 ### Real zu testen (E2E im laufenden Programm)
 - Store-App schließen (PR #3): App starten → Schließen-Modus → geht wirklich zu?
-- App finden + Picker (PR #4/#5): „Neu suchen" → Dialog → anhaken → startet/schließt?
+- App finden + Picker (PR #4/#5): „Neu suchen" → Dialog → anhaken → Hinzufügen ✅ getestet
+  (2026-06-25). Offen: ob eine hinzugefügte Store-App über die Karte auch wirklich
+  startet/schließt (echter Programmstart wurde im Test nicht ausgelöst).
 
 ### Bekannte kleinere Punkte
 - **`detect_installed_apps`** deckt **Store-/UWP-Apps** dynamisch ab; rein klassische `.exe`
@@ -157,4 +159,4 @@ gh pr create        # PR aufmachen → reviewen → mergen
 
 ---
 
-*Letzte Aktualisierung: 2026-06-23 — zwei Handover-Dateien zusammengeführt; Stand nach PRs #1–#4 (gemerged) und #5 (offen).*
+*Letzte Aktualisierung: 2026-06-25 — PR #5 (App-Kategorisierung + Blockliste) real per E2E getestet, Stand nach PRs #1–#5 (alle gemerged).*
