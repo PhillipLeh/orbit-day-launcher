@@ -287,6 +287,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .app-picker-item input{width:15px;height:15px;accent-color:rgb(var(--accent-rgb));cursor:pointer;flex-shrink:0}
 .app-picker-name{flex:1;font-size:12px;letter-spacing:0.5px;color:var(--text-strong)}
 .app-picker-cat{font-size:9px;letter-spacing:1px;color:var(--text-strong);opacity:0.45;flex-shrink:0}
+.app-picker-cat-head{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgb(var(--ui-text-rgb));opacity:0.85;margin:10px 2px 2px;padding-bottom:4px;border-bottom:1px solid rgba(var(--accent-rgb),0.18)}
+.app-picker-cat-head:first-child{margin-top:2px}
 .app-picker-actions{display:flex;justify-content:space-between;gap:10px;padding:14px 18px;border-top:1px solid rgba(var(--accent-rgb),0.15)}
 .app-picker-selall,.app-picker-add{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;letter-spacing:2px;padding:8px 18px;border-radius:5px;cursor:pointer;transition:all 0.2s;color:var(--text-strong)}
 .app-picker-selall{background:transparent;border:1px solid rgba(var(--accent-rgb),0.3)}
