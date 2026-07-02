@@ -3,6 +3,7 @@ use std::process::Command;
 use std::fs;
 use tauri::{Manager, menu::{MenuBuilder, MenuItemBuilder}, tray::TrayIconBuilder};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
+use tauri_plugin_opener::OpenerExt;
 
 #[derive(serde::Serialize, Clone)]
 struct DetectedApp {
@@ -109,11 +110,70 @@ fn detect_installed_apps() -> Vec<DetectedApp> {
     apps
 }
 
+// Ermittelt die .exe des als Standard gesetzten Browsers (für https) aus der Registry.
+// So können wir ALLE Web-URLs in einem einzigen Browser-Aufruf öffnen (statt vier
+// Einzelstarts, die einen noch bootenden Browser überfordern → leerer Tab).
+fn default_browser_exe() -> Option<String> {
+    // 1) ProgId der https-Verknüpfung (z.B. "FirefoxURL-308046B0..." / "ChromeHTML" / "MSEdgeHTM")
+    let hkcu = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
+    let progid: String = hkcu
+        .open_subkey(r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice")
+        .ok()?
+        .get_value("ProgId")
+        .ok()?;
+    // 2) Zugehöriges Öffnen-Kommando: `"C:\...\browser.exe" -osint -url "%1"`
+    let hkcr = winreg::RegKey::predef(winreg::enums::HKEY_CLASSES_ROOT);
+    let cmd: String = hkcr
+        .open_subkey(format!(r"{}\shell\open\command", progid))
+        .ok()?
+        .get_value("")
+        .ok()?;
+    // 3) Reinen .exe-Pfad herauslösen (erstes Token in Anführungszeichen, sonst erstes Wort)
+    let exe = if cmd.starts_with('"') {
+        cmd[1..].split('"').next()?.to_string()
+    } else {
+        cmd.split_whitespace().next()?.to_string()
+    };
+    if exe.is_empty() { None } else { Some(exe) }
+}
+
 #[tauri::command]
-fn launch_app(app_id: String, app_type: String, path: String) -> Result<(), String> {
+fn launch_urls(app: tauri::AppHandle, urls: Vec<String>) -> Result<(), String> {
+    if urls.is_empty() { return Ok(()); }
+    // Protokoll-URIs (steam://, discord://, …) gehören NICHT in den Browser → einzeln
+    // über den Standard-Handler. Nur echte http(s)-URLs werden gebündelt.
+    let (web, other): (Vec<String>, Vec<String>) = urls.into_iter().partition(|u| {
+        let l = u.to_lowercase();
+        l.starts_with("http://") || l.starts_with("https://")
+    });
+    for u in &other {
+        let _ = app.opener().open_url(u.as_str(), None::<&str>);
+    }
+    if !web.is_empty() {
+        // Alle Web-URLs in EINEM Aufruf an den Standardbrowser → er öffnet sie als Tabs
+        // in einem Fenster, egal ob kalt oder warm. Kein Race, keine verschluckten URLs.
+        if let Some(exe) = default_browser_exe() {
+            if Command::new(&exe).args(&web).spawn().is_ok() {
+                return Ok(());
+            }
+        }
+        // Fallback (Browser nicht ermittelbar): einzeln über den Standard-Handler
+        for u in &web {
+            let _ = app.opener().open_url(u.as_str(), None::<&str>);
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn launch_app(app: tauri::AppHandle, app_id: String, app_type: String, path: String) -> Result<(), String> {
     if app_type == "url" {
-        // Web-URL oder Protokoll-URI (steam://, discord://) über Windows-Standard-Handler
-        Command::new("cmd").args(["/C", "start", "", &path]).spawn().map_err(|e| e.to_string())?;
+        // Web-URL oder Protokoll-URI (steam://, discord://) über den Windows-Standard-Handler.
+        // NICHT über `cmd /C start`: cmd behandelt `&` (und `|`, `^`, …) als Metazeichen und
+        // zerschneidet URLs mit Query-Parametern (z.B. YouTube ...?v=x&list=y) → kaputter/leerer
+        // Tab + verschluckte URL. Der Opener ruft ShellExecute direkt auf und übergibt die URL
+        // unverändert an den Standardbrowser → sauberer Tab, alle Parameter intakt.
+        app.opener().open_url(path.as_str(), None::<&str>).map_err(|e| e.to_string())?;
     } else if app_type == "store" && app_id.contains('!') {
         // Echte Store-App mit AUMID
         Command::new("explorer.exe").arg(format!("shell:AppsFolder\\{}", app_id)).spawn().map_err(|e| e.to_string())?;
@@ -342,7 +402,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            launch_app, close_app, close_window, quit_app, open_main_window,
+            launch_app, launch_urls, close_app, close_window, quit_app, open_main_window,
             save_settings, load_settings, check_internet,
             set_always_on_top, set_fullscreen, set_window_size,
             set_autostart, detect_installed_apps, set_shortcut

@@ -753,14 +753,27 @@ async function startSequence(){
   document.getElementById('screen-select').style.display='none'; document.getElementById('screen-load').style.display='block';
   const bar=document.getElementById('bar'),percent=document.getElementById('percent'),statusEl=document.getElementById('status'),ready=document.getElementById('ready');
 
-  // Programme nacheinander mit Verzögerung starten; Fehler sammeln (ehrliches Feedback)
+  // Programme starten; Fehler sammeln (ehrliches Feedback)
   const failed=[];
   (async()=>{
-    for(let i=0;i<selected.length;i++){
-      const id=selected[i], prog=ALL_PROGRAMS.find(p=>p.id===id);
+    // Web-/Protokoll-URLs gebündelt in EINEM Aufruf öffnen → der Standardbrowser
+    // macht daraus Tabs in einem Fenster (kein Kaltstart-Race, keine leeren Tabs).
+    // Reihenfolge = Auswahlreihenfolge.
+    const urlPaths = selected
+      .map(id => ALL_PROGRAMS.find(p=>p.id===id))
+      .filter(p => p && p.appType==='url')
+      .map(p => p.path);
+    if(urlPaths.length){
+      try{ await invoke("launch_urls",{urls:urlPaths}); }
+      catch(e){ failed.push('URLs'); console.error('launch_urls',e); }
+    }
+    // Übrige Programme (.exe / Store) einzeln mit Verzögerung starten
+    const rest = selected.filter(id => { const p=ALL_PROGRAMS.find(x=>x.id===id); return !p || p.appType!=='url'; });
+    for(let i=0;i<rest.length;i++){
+      const id=rest[i], prog=ALL_PROGRAMS.find(p=>p.id===id);
       try{ await invoke("launch_app",{appId:id,appType:prog?.appType||'store',path:prog?.path||id}); }
       catch(e){ failed.push(prog?.name||id); console.error('launch_app',id,e); }
-      if(stepMs>0 && i<selected.length-1) await sleep(stepMs);
+      if(stepMs>0 && i<rest.length-1) await sleep(stepMs);
     }
   })();
 
