@@ -75,8 +75,8 @@
 
   <div class="wrap">
     <div class="logo-label">ORBIT DAY LAUNCHER</div>
-    <h1>Willkommen</h1>
-    <p class="sub">Wir suchen nach installierten Programmen auf deinem PC.</p>
+    <h1 data-i18n="onboarding.welcome">Willkommen</h1>
+    <p class="sub" data-i18n="onboarding.subtitle">Wir suchen nach installierten Programmen auf deinem PC.</p>
 
     <!-- Radar -->
     <div class="radar-wrap">
@@ -109,21 +109,23 @@
       </svg>
     </div>
 
-    <div class="scan-text" id="scanText">Durchsuche deinen PC...</div>
+    <div class="scan-text" id="scanText" data-i18n="onboarding.scanning">Durchsuche deinen PC...</div>
 
-    <div class="none-msg" id="noneMsg">Keine bekannten Programme gefunden. Manuell hinzufügen im Reiter Programme.</div>
+    <div class="none-msg" id="noneMsg" data-i18n="onboarding.noneFound">Keine bekannten Programme gefunden. Manuell hinzufügen im Reiter Programme.</div>
 
     <div class="row-actions" id="rowActions" style="display:none">
-      <span class="lnk" onclick="toggleAll(true)">Alle auswählen</span>
-      <span class="lnk" onclick="toggleAll(false)">Alle abwählen</span>
+      <span class="lnk" onclick="toggleAll(true)" data-i18n="onboarding.selectAll">Alle auswählen</span>
+      <span class="lnk" onclick="toggleAll(false)" data-i18n="onboarding.deselectAll">Alle abwählen</span>
     </div>
     <div class="app-list" id="appList"></div>
 
-    <button class="btn-go"   id="btnGo"   onclick="finish()">LOS GEHT'S</button>
-    <div    class="btn-skip" id="btnSkip" onclick="finish()">Überspringen – später hinzufügen</div>
+    <button class="btn-go"   id="btnGo"   onclick="finish()" data-i18n="onboarding.go">LOS GEHT'S</button>
+    <div    class="btn-skip" id="btnSkip" onclick="finish()" data-i18n="onboarding.skip">Überspringen – später hinzufügen</div>
   </div>
 
+  <script src="i18n.js"></script>
   <script>
+    I18N.setLang(I18N.detectLang());
     const { invoke } = window.__TAURI__.core;
     let detected = [];
 
@@ -158,7 +160,7 @@
         const total = Math.min(detected.length, 10);
 
         if (!detected.length) {
-          document.getElementById('scanText').textContent = 'Keine Programme gefunden.';
+          document.getElementById('scanText').textContent = I18N.t('onboarding.noneFoundShort');
           document.getElementById('noneMsg').style.display = 'block';
         } else {
           // Punkte nacheinander erscheinen lassen
@@ -167,7 +169,7 @@
               addOrbitDot(i, total, CAT_COLORS[app.category] || '#00e5ff');
               if (i === detected.length - 1 || i === 9) {
                 document.getElementById('scanText').textContent =
-                  `${Math.min(detected.length, 99)} Programme gefunden`;
+                  I18N.t('onboarding.foundCount', {count: Math.min(detected.length, 99)});
               }
             }, 300 + i * 200);
           });
@@ -175,21 +177,21 @@
           return;
         }
       } catch(e) {
-        document.getElementById('scanText').textContent = 'Suche fehlgeschlagen.';
+        document.getElementById('scanText').textContent = I18N.t('onboarding.searchFailed');
       }
       showFinishButtons();
     }
 
     function renderList() {
       document.getElementById('scanText').textContent =
-        `${Math.min(detected.length, 99)} Programme gefunden`;
+        I18N.t('onboarding.foundCount', {count: Math.min(detected.length, 99)});
       const list = document.getElementById('appList');
       list.innerHTML = '';
       const byCat = {};
       detected.forEach(a => { if (!byCat[a.category]) byCat[a.category]=[]; byCat[a.category].push(a); });
       Object.entries(byCat).forEach(([cat, apps]) => {
         const lbl = document.createElement('div');
-        lbl.className = 'cat-label'; lbl.textContent = cat.toUpperCase();
+        lbl.className = 'cat-label'; lbl.textContent = I18N.translateCategory(cat).toUpperCase();
         list.appendChild(lbl);
         apps.forEach(app => {
           const color = CAT_COLORS[cat] || '#00e5ff';
@@ -197,7 +199,7 @@
           el.className = 'app-item selected'; el.dataset.id = app.id;
           el.innerHTML = `<div class="a-dot" style="background:${color}"></div>
             <div class="a-name">${app.name}</div>
-            <div class="a-tag">${app.app_type==='store'?'Store':'.exe'}</div>
+            <div class="a-tag">${app.app_type==='store'?I18N.t('common.store'):'.exe'}</div>
             <div class="a-check">✓</div>`;
           el.onclick = () => el.classList.toggle('selected');
           list.appendChild(el);
@@ -220,7 +222,7 @@
     async function finish() {
       const selected = [...document.querySelectorAll('.app-item.selected')]
         .map(el => detected.find(a => a.id === el.dataset.id)).filter(Boolean);
-      const settings = { onboardingDone: true, onboardingPrograms: selected };
+      const settings = { onboardingDone: true, onboardingPrograms: selected, languageMode: I18N.getLang() };
       await invoke('save_settings', { settings: JSON.stringify(settings) });
       await invoke('open_main_window');
     }
