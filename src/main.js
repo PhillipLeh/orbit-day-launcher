@@ -29,6 +29,18 @@ let profileTimer=null, lastProfileFire='', countdownInt=null, pendingProfile=nul
 let closeMode=false; // false=Starten, true=Schließen
 let themeMode='system'; // system | dark | light
 let accentColor=null;    // null = Theme-Standard, sonst Hex-Override
+let languageMode=null;   // null = Auto-Erkennung (navigator.language), sonst 'de'|'en'|'es'|'hi'|'fr'
+
+// ── Sprache ──
+function setLanguage(lang){
+  languageMode=lang;
+  I18N.setLang(lang);
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
+  renderKiCards(); renderProgramList(); renderBundleList(); renderBundleQuick();
+  renderProfileBundleOptions(); renderProfileList();
+  updateStartBtn(); checkStartButton(); updateScPreview();
+  markDirty();
+}
 
 // ── Helpers ──
 function getColor(id){ return appColors[id]||DEFAULT_COLORS[id]||ALL_PROGRAMS.find(p=>p.id===id)?.color||'#00e5ff'; }
@@ -287,7 +299,7 @@ function renderProgramList(){
   const byCat={};
   ALL_PROGRAMS.forEach(p=>{if(!byCat[p.category])byCat[p.category]=[];byCat[p.category].push(p);});
   Object.entries(byCat).forEach(([cat,progs])=>{
-    const lbl=document.createElement('div'); lbl.className='prog-cat-label'; lbl.textContent=cat.toUpperCase(); list.appendChild(lbl);
+    const lbl=document.createElement('div'); lbl.className='prog-cat-label'; lbl.textContent=I18N.translateCategory(cat).toUpperCase(); list.appendChild(lbl);
     progs.forEach(p=>{
       const color=getColor(p.id);
       const el=document.createElement('div'); el.className='prog-item';
@@ -318,14 +330,14 @@ function removeProgram(id){
 // Frontend-Karten-x: stoppt Event-Bubbling, dann echtes Löschen
 function removeProgram2(event,id){ event.stopPropagation(); removeProgram(id); }
 async function rescanPrograms(){
-  const btn=document.querySelector('.btn-rescan'); if(btn) btn.textContent='⌛ Suche...';
+  const btn=document.querySelector('.btn-rescan'); if(btn) btn.textContent=I18N.t('programs.rescanning');
   try{
     const found=await invoke('detect_installed_apps');
     const neu=found.filter(app=>!ALL_PROGRAMS.find(p=>p.id===app.id));
-    if(btn) btn.textContent='↻ Neu suchen';
-    if(!neu.length){ if(btn){ btn.textContent='↻ keine neuen'; setTimeout(()=>{btn.textContent='↻ Neu suchen';},2500); } return; }
+    if(btn) btn.textContent=I18N.t('programs.rescan');
+    if(!neu.length){ if(btn){ btn.textContent=I18N.t('programs.rescanNone'); setTimeout(()=>{btn.textContent=I18N.t('programs.rescan');},2500); } return; }
     openAppPicker(neu);
-  }catch(e){ if(btn){ btn.textContent='↻ Fehler'; setTimeout(()=>{btn.textContent='↻ Neu suchen';},2000); } }
+  }catch(e){ if(btn){ btn.textContent=I18N.t('programs.rescanError'); setTimeout(()=>{btn.textContent=I18N.t('programs.rescan');},2000); } }
 }
 
 // Auswahl-Dialog: zeigt gefundene Apps mit Häkchen; nur Angehakte werden übernommen.
@@ -334,16 +346,18 @@ function openAppPicker(list){
   const ov=document.createElement('div'); ov.className='app-picker-overlay';
   const panel=document.createElement('div'); panel.className='app-picker';
   const head=document.createElement('div'); head.className='app-picker-head';
-  head.innerHTML='<span>Apps gefunden</span><span class="app-picker-close" title="Schließen">&#10005;</span>';
+  const headTitle=document.createElement('span'); headTitle.textContent=I18N.t('picker.title');
+  const headClose=document.createElement('span'); headClose.className='app-picker-close'; headClose.title=I18N.t('common.close'); headClose.innerHTML='&#10005;';
+  head.append(headTitle,headClose);
   const sub=document.createElement('div'); sub.className='app-picker-sub';
-  sub.textContent=`${list.length} neue App(s) — wähle aus, was in den Orbit soll.`;
+  sub.textContent=I18N.t('picker.subtitle',{count:list.length});
   const items=document.createElement('div'); items.className='app-picker-list';
   // Nach Kategorie gruppieren (feste Reihenfolge; Unbekanntes ans Ende).
   const order=['KI','Entwicklung','Browser','Kommunikation','Unterhaltung','Produktivität','Tools','Sonstige'];
   const groups={};
   list.forEach((app,idx)=>{ const c=app.category||'Sonstige'; (groups[c]||(groups[c]=[])).push({app,idx}); });
   Object.keys(groups).sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);}).forEach(cat=>{
-    const h=document.createElement('div'); h.className='app-picker-cat-head'; h.textContent=cat;
+    const h=document.createElement('div'); h.className='app-picker-cat-head'; h.textContent=I18N.translateCategory(cat);
     items.appendChild(h);
     groups[cat].forEach(({app,idx})=>{
       const row=document.createElement('label'); row.className='app-picker-item';
@@ -353,15 +367,15 @@ function openAppPicker(list){
     });
   });
   const actions=document.createElement('div'); actions.className='app-picker-actions';
-  const selAll=document.createElement('button'); selAll.className='app-picker-selall'; selAll.textContent='Alle';
-  const addBtn=document.createElement('button'); addBtn.className='app-picker-add'; addBtn.textContent='Hinzufügen';
+  const selAll=document.createElement('button'); selAll.className='app-picker-selall'; selAll.textContent=I18N.t('picker.selectAll');
+  const addBtn=document.createElement('button'); addBtn.className='app-picker-add'; addBtn.textContent=I18N.t('picker.add');
   actions.append(selAll,addBtn);
   panel.append(head,sub,items,actions); ov.appendChild(panel); document.body.appendChild(ov);
 
   const close=()=>ov.remove();
   head.querySelector('.app-picker-close').onclick=close;
   ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
-  selAll.onclick=()=>{ const boxes=items.querySelectorAll('input'); const allOn=[...boxes].every(b=>b.checked); boxes.forEach(b=>b.checked=!allOn); selAll.textContent=allOn?'Alle':'Keine'; };
+  selAll.onclick=()=>{ const boxes=items.querySelectorAll('input'); const allOn=[...boxes].every(b=>b.checked); boxes.forEach(b=>b.checked=!allOn); selAll.textContent=allOn?I18N.t('picker.selectAll'):I18N.t('picker.selectNone'); };
   addBtn.onclick=()=>{
     let added=0;
     items.querySelectorAll('input:checked').forEach(cb=>{
@@ -400,7 +414,7 @@ function addProgramManually(){
 // ── Bundles ──
 function renderBundleList(){
   const list=document.getElementById('bundleList'); if(!list) return; list.innerHTML='';
-  if(!bundles.length){list.innerHTML='<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4);text-align:center;padding:6px;letter-spacing:1px">Noch keine Bundles</div>';return;}
+  if(!bundles.length){list.innerHTML=`<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4);text-align:center;padding:6px;letter-spacing:1px">${I18N.t('bundles.none')}</div>`;return;}
   bundles.forEach((b,i)=>{
     const el=document.createElement('div'); el.className='bundle-item'+(activeBundleIdx===i?' active':'');
     el.innerHTML=`<div class="bundle-item-info" onclick="selectBundle(${i})"><div class="bundle-item-name">${b.name.toUpperCase()}</div><div class="bundle-item-apps">${b.programs.map(id=>ALL_PROGRAMS.find(p=>p.id===id)?.name||id).join(' · ')}</div></div><div class="bundle-item-btns"><div class="bundle-edit-btn" onclick="openBundleEditor(${i})">&#9998;</div><div class="bundle-item-del" onclick="deleteBundle(event,${i})">✕</div></div>`;
@@ -410,7 +424,7 @@ function renderBundleList(){
 }
 function renderBundleColorList(){
   const list=document.getElementById('bundleColorList'); if(!list) return; list.innerHTML='';
-  if(!bundles.length){list.innerHTML='<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4)">Erst Bundles erstellen</div>';return;}
+  if(!bundles.length){list.innerHTML=`<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4)">${I18N.t('bundles.createFirst')}</div>`;return;}
   bundles.forEach((b,i)=>{
     const color=bundleColors[b.name]||'#00e5ff';
     const el=document.createElement('div'); el.className='color-editor-item';
@@ -458,18 +472,18 @@ function renderProfileBundleOptions(){
   const sel=document.getElementById('profileBundleSelect'); if(!sel) return;
   const cur=sel.value;
   sel.innerHTML='';
-  if(!bundles.length){ const o=document.createElement('option'); o.value=''; o.textContent='Erst Bundle erstellen'; sel.appendChild(o); return; }
+  if(!bundles.length){ const o=document.createElement('option'); o.value=''; o.textContent=I18N.t('bundles.createFirst'); sel.appendChild(o); return; }
   bundles.forEach(b=>{ const o=document.createElement('option'); o.value=b.name; o.textContent=b.name; sel.appendChild(o); });
   if(cur) sel.value=cur;
 }
 function renderProfileList(){
   const list=document.getElementById('profileList'); if(!list) return; list.innerHTML='';
-  if(!profiles.length){ list.innerHTML='<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4);text-align:center;padding:6px;letter-spacing:1px">Noch keine Profile</div>'; return; }
+  if(!profiles.length){ list.innerHTML=`<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4);text-align:center;padding:6px;letter-spacing:1px">${I18N.t('profiles.none')}</div>`; return; }
   profiles.forEach((p,i)=>{
     const exists=bundles.some(b=>b.name===p.bundle);
     const el=document.createElement('div'); el.className='bundle-item';
-    const days=(p.days&&p.days.length)?p.days.join('·'):'täglich';
-    el.innerHTML=`<div class="bundle-item-info"><div class="bundle-item-name">${p.name.toUpperCase()} · ${p.time}</div><div class="bundle-item-apps">${exists?p.bundle:'<span style=\"color:#ff6666\">Bundle fehlt</span>'} · ${days}</div></div><div class="bundle-item-btns"><div class="bundle-item-del" onclick="deleteProfile(${i})">✕</div></div>`;
+    const days=(p.days&&p.days.length)?p.days.map(d=>I18N.t('day.'+d.toLowerCase())).join('·'):I18N.t('profiles.daily');
+    el.innerHTML=`<div class="bundle-item-info"><div class="bundle-item-name">${p.name.toUpperCase()} · ${p.time}</div><div class="bundle-item-apps">${exists?p.bundle:'<span style=\"color:#ff6666\">'+I18N.t('profiles.bundleMissing')+'</span>'} · ${days}</div></div><div class="bundle-item-btns"><div class="bundle-item-del" onclick="deleteProfile(${i})">✕</div></div>`;
     list.appendChild(el);
   });
 }
@@ -561,12 +575,12 @@ function updateStartBtn(){
   const btn=document.getElementById('btnStart');
   if(closeMode){
     // Im Schließen-Modus: Button schließt die Auswahl
-    if(activeBundleIdx>=0){const b=bundles[activeBundleIdx];btn.innerHTML=`&#9632; ${b.name.toUpperCase()} SCHLIESSEN`;}
-    else btn.innerHTML='AUSGEWÄHLTE SCHLIESSEN';
+    if(activeBundleIdx>=0){const b=bundles[activeBundleIdx];btn.innerHTML=`&#9632; ${b.name.toUpperCase()} ${I18N.t('mode.close').replace('■ ','').toUpperCase()}`;}
+    else btn.innerHTML=I18N.t('btn.closeAllSelected');
     btn.classList.remove('ready-state');
     return;
   }
-  if(activeBundleIdx>=0){const b=bundles[activeBundleIdx];btn.innerHTML=bundleReady?`&#9654; ${b.name.toUpperCase()}`:`&#9646;&#9646; ${b.name.toUpperCase()}`;btn.classList.add('ready-state');}else{btn.innerHTML='ALLES STARTEN';btn.classList.remove('ready-state');bundleReady=false;}
+  if(activeBundleIdx>=0){const b=bundles[activeBundleIdx];btn.innerHTML=bundleReady?`&#9654; ${b.name.toUpperCase()}`:`&#9646;&#9646; ${b.name.toUpperCase()}`;btn.classList.add('ready-state');}else{btn.innerHTML=I18N.t('btn.startAll');btn.classList.remove('ready-state');bundleReady=false;}
 }
 function handleStartBtn(){
   if(closeMode){ closeSelected(); return; }
@@ -579,8 +593,8 @@ function setMode(mode){
   document.getElementById('mode-start').classList.toggle('active',!closeMode);
   document.getElementById('mode-close').classList.toggle('active',closeMode);
   document.getElementById('zoomWrap')?.classList.toggle('close-mode',closeMode);
-  document.getElementById('headline').textContent=closeMode?'Was soll geschlossen werden?':'Was soll heute starten?';
-  document.getElementById('sysLabel').textContent=closeMode?'SYSTEM SHUTDOWN':'SYSTEM INITIALIZE';
+  document.getElementById('headline').textContent=closeMode?I18N.t('headline.close'):I18N.t('headline.start');
+  document.getElementById('sysLabel').textContent=closeMode?I18N.t('sys.shutdown'):I18N.t('sys.initialize');
   // "Alles schließen" nur im Schließen-Modus zeigen
   document.getElementById('btnCloseAll').classList.toggle('visible',closeMode);
   updateStartBtn(); checkStartButton();
@@ -596,7 +610,7 @@ async function closeApps(ids){
   // Kurzes visuelles Feedback am Button
   const btn=document.getElementById('btnStart');
   const orig=btn.innerHTML;
-  btn.innerHTML=failed.length?`&#10005; ${failed.length} fehlgeschlagen`:'&#10003; GESCHLOSSEN';
+  btn.innerHTML=failed.length?I18N.t('close.failedCount',{n:failed.length}):I18N.t('close.closed');
   setTimeout(()=>{ updateStartBtn(); },2000);
 }
 function closeSelected(){
@@ -608,7 +622,7 @@ function closeAll(){
   const ids=ALL_PROGRAMS.filter(p=>!hiddenCards.has(p.id)).map(p=>p.id);
   const btn=document.getElementById('btnCloseAll');
   const orig=btn.innerHTML;
-  btn.innerHTML='&#9632; SCHLIESSE ALLE…';
+  btn.innerHTML=I18N.t('btn.closingAll');
   closeApps(ids);
   setTimeout(()=>{ btn.innerHTML=orig; },2000);
 }
@@ -616,7 +630,7 @@ function closeAll(){
 // ── Shortcut (Strg+Alt fest, dritte Taste frei) ──
 function updateScPreview(){
   const preview=document.getElementById('scPreview');
-  if(preview) preview.textContent='Strg+Alt+'+(scKey||'O');
+  if(preview) preview.textContent=I18N.t('shortcut.ctrl')+'+'+I18N.t('shortcut.alt')+'+'+(scKey||'O');
 }
 async function applyShortcut(){
   scKey=(document.getElementById('scKey').value||scKey||'O').trim();
@@ -628,12 +642,12 @@ let capturing=false;
 function startCapture(){
   const btn=document.getElementById('scCaptureBtn');
   if(capturing){ stopCapture(); return; }
-  capturing=true; btn.textContent='Drücke Taste…'; btn.classList.add('active');
+  capturing=true; btn.textContent=I18N.t('capture.pressKey'); btn.classList.add('active');
   window.addEventListener('keydown',captureKey,true);
 }
 function stopCapture(){
   capturing=false; const btn=document.getElementById('scCaptureBtn');
-  if(btn){ btn.textContent='Belegen'; btn.classList.remove('active'); }
+  if(btn){ btn.textContent=I18N.t('shortcut.assign'); btn.classList.remove('active'); }
   window.removeEventListener('keydown',captureKey,true);
 }
 function captureKey(e){
@@ -645,7 +659,7 @@ function captureKey(e){
   if(e.code.startsWith('Key')) key=e.code.slice(3);            // Buchstabe A–Z
   else if(/^Digit[1-9]$/.test(e.code)) key=e.code.slice(5);    // Zahl 1–9 (0 ausgeschlossen)
   else if(/^Numpad[1-9]$/.test(e.code)) key=e.code.slice(6);   // Numpad 1–9
-  if(!key){ const b=document.getElementById('scCaptureBtn'); if(b) b.textContent='Nur A–Z / 1–9'; setTimeout(()=>{ if(b&&capturing) b.textContent='Drücke Taste…'; },1200); return; }
+  if(!key){ const b=document.getElementById('scCaptureBtn'); if(b) b.textContent=I18N.t('capture.onlyAZ09'); setTimeout(()=>{ if(b&&capturing) b.textContent=I18N.t('capture.pressKey'); },1200); return; }
   scKey=key;
   document.getElementById('scKey').value=scKey;
   updateScPreview(); stopCapture(); applyShortcut();
@@ -654,14 +668,14 @@ function captureKey(e){
 // ── Speichern / Laden ──
 async function saveAll(){
   const customProgs=ALL_PROGRAMS.filter(p=>!['claude','codex','antigravity'].includes(p.id));
-  const s={alwaysOnTop,autoSize,sizeId:currentSizeId,zoom:currentZoom,hiddenCards:[...hiddenCards],bundles,appColors,bundleColors,autostartEnabled,autostartDays,customPrograms:customProgs,onboardingDone:true,layoutMode,gridCols,orbitCount,orbitSizes,orbitSpeeds,scKey,lastActivePrograms,globalDelay,profiles,themeMode,accentColor,customAccents,deletedBasePrograms,programOrder:ALL_PROGRAMS.map(p=>p.id)};
+  const s={alwaysOnTop,autoSize,sizeId:currentSizeId,zoom:currentZoom,hiddenCards:[...hiddenCards],bundles,appColors,bundleColors,autostartEnabled,autostartDays,customPrograms:customProgs,onboardingDone:true,layoutMode,gridCols,orbitCount,orbitSizes,orbitSpeeds,scKey,lastActivePrograms,globalDelay,profiles,themeMode,accentColor,customAccents,deletedBasePrograms,programOrder:ALL_PROGRAMS.map(p=>p.id),languageMode};
   try{
     await invoke('save_settings',{settings:JSON.stringify(s)});
     try{await invoke('set_autostart',{enable:autostartEnabled,days:autostartDays});}catch(e){}
     isDirty=false;
     const disk=document.getElementById('saveDisk'); disk.classList.remove('dirty'); disk.classList.add('saved');
     setTimeout(()=>disk.classList.remove('saved'),2500);
-    document.querySelectorAll('.btn-save').forEach(btn=>{const orig=btn.textContent;btn.textContent='✓ GESPEICHERT';btn.style.borderColor='#39d98a';btn.style.color='#39d98a';setTimeout(()=>{btn.textContent=orig;btn.style.borderColor='';btn.style.color='';},2000);});
+    document.querySelectorAll('.btn-save').forEach(btn=>{const orig=btn.textContent;btn.textContent=I18N.t('saved.label');btn.style.borderColor='#39d98a';btn.style.color='#39d98a';setTimeout(()=>{btn.textContent=orig;btn.style.borderColor='';btn.style.color='';},2000);});
   }catch(e){console.error(e);}
 }
 async function loadSettings(){
@@ -698,6 +712,9 @@ async function loadSettings(){
     if(s.globalDelay!==undefined){ globalDelay=s.globalDelay; const sl=document.getElementById('globalDelay'); if(sl){ sl.value=globalDelay; document.getElementById('globalDelayVal').textContent=(globalDelay*0.5).toFixed(1)+'s'; } }
     if(s.profiles) profiles=s.profiles;
     if(s.themeMode){ themeMode=s.themeMode; ['system','dark','light'].forEach(m=>document.getElementById('theme-'+m)?.classList.toggle('active',m===themeMode)); applyTheme(); }
+    languageMode=s.languageMode||I18N.detectLang();
+    I18N.setLang(languageMode);
+    document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===languageMode));
     if(s.accentColor!==undefined){ accentColor=s.accentColor; applyAccent(); }
     if(s.customAccents&&Array.isArray(s.customAccents)){ customAccents=[s.customAccents[0]||null,s.customAccents[1]||null]; }
     renderAccentSlots();
@@ -717,7 +734,7 @@ async function loadSettings(){
     }
     checkStartButton();
     updateDots();   // Orbit-Punkte an wiederhergestellte Selektion angleichen (Fix: zuletzt aktive Programme im Orbit anzeigen)
-  }catch(e){console.log('Keine Einstellungen:',e);renderKiCards();}
+  }catch(e){console.log('Keine Einstellungen:',e);languageMode=I18N.detectLang();I18N.setLang(languageMode);document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===languageMode));renderKiCards();}
 }
 
 // ── Start-Sequenz ──
@@ -736,29 +753,42 @@ async function startSequence(){
   document.getElementById('screen-select').style.display='none'; document.getElementById('screen-load').style.display='block';
   const bar=document.getElementById('bar'),percent=document.getElementById('percent'),statusEl=document.getElementById('status'),ready=document.getElementById('ready');
 
-  // Programme nacheinander mit Verzögerung starten; Fehler sammeln (ehrliches Feedback)
+  // Programme starten; Fehler sammeln (ehrliches Feedback)
   const failed=[];
   (async()=>{
-    for(let i=0;i<selected.length;i++){
-      const id=selected[i], prog=ALL_PROGRAMS.find(p=>p.id===id);
+    // Web-/Protokoll-URLs gebündelt in EINEM Aufruf öffnen → der Standardbrowser
+    // macht daraus Tabs in einem Fenster (kein Kaltstart-Race, keine leeren Tabs).
+    // Reihenfolge = Auswahlreihenfolge.
+    const urlPaths = selected
+      .map(id => ALL_PROGRAMS.find(p=>p.id===id))
+      .filter(p => p && p.appType==='url')
+      .map(p => p.path);
+    if(urlPaths.length){
+      try{ await invoke("launch_urls",{urls:urlPaths}); }
+      catch(e){ failed.push('URLs'); console.error('launch_urls',e); }
+    }
+    // Übrige Programme (.exe / Store) einzeln mit Verzögerung starten
+    const rest = selected.filter(id => { const p=ALL_PROGRAMS.find(x=>x.id===id); return !p || p.appType!=='url'; });
+    for(let i=0;i<rest.length;i++){
+      const id=rest[i], prog=ALL_PROGRAMS.find(p=>p.id===id);
       try{ await invoke("launch_app",{appId:id,appType:prog?.appType||'store',path:prog?.path||id}); }
       catch(e){ failed.push(prog?.name||id); console.error('launch_app',id,e); }
-      if(stepMs>0 && i<selected.length-1) await sleep(stepMs);
+      if(stepMs>0 && i<rest.length-1) await sleep(stepMs);
     }
   })();
 
   // Lade-Animation: Dauer an Delay anpassen, damit sie den echten Start grob begleitet
   const baseStep=Math.max(800, stepMs+300);
   const perApp=Math.floor(90/selected.length);let steps=[],pct=0;
-  selected.forEach(id=>{const name=ALL_PROGRAMS.find(p=>p.id===id)?.name||id;steps.push({pct:pct+Math.floor(perApp*0.4),label:name+' wird gestartet'});pct+=perApp;steps.push({pct,label:name+' bereit'});});
-  steps.push({pct:100,label:'Systems online'});
+  selected.forEach(id=>{const name=ALL_PROGRAMS.find(p=>p.id===id)?.name||id;steps.push({pct:pct+Math.floor(perApp*0.4),label:I18N.t('start.startingApp',{name})});pct+=perApp;steps.push({pct,label:I18N.t('start.readyApp',{name})});});
+  steps.push({pct:100,label:I18N.t('start.systemsOnline')});
   let dotCount=0;
   const di=setInterval(()=>{dotCount=(dotCount+1)%4;const d=document.getElementById('dots');if(d)d.textContent='.'.repeat(dotCount);},400);
   let lastDelay=0;
   steps.forEach((step,i)=>{const delay=500+i*baseStep;lastDelay=delay;setTimeout(()=>{bar.style.width=step.pct+'%';percent.textContent=step.pct+'%';if(step.pct<100)statusEl.innerHTML=step.label+'<span id="dots">'+'.'.repeat(dotCount)+'</span>';},delay);});
   setTimeout(async()=>{clearInterval(di);
     // Ehrliches Endergebnis: bei Fehlern Hinweis statt nur "Systems online"
-    if(failed.length){ statusEl.style.display='block'; statusEl.innerHTML='<span style="color:#ff6666">'+failed.length+' nicht gestartet:</span> '+failed.join(', '); bar.style.background='#ff4444'; }
+    if(failed.length){ statusEl.style.display='block'; statusEl.innerHTML='<span style="color:#ff6666">'+I18N.t('start.notStarted',{n:failed.length})+'</span> '+failed.join(', '); bar.style.background='#ff4444'; }
     else statusEl.style.display='none';
     ready.style.display='block';
     setTimeout(()=>resetToSelect(),5000);   // nach 5s zurück zum Start-Frontend
@@ -785,7 +815,7 @@ async function updateNetStatus(){
   try{ online=await invoke('check_internet'); }
   catch(e){ online=navigator.onLine; } // Fallback
   el.classList.toggle('offline',!online);
-  el.title=online?'Internet verbunden':'Keine Internetverbindung';
+  el.title=online?I18N.t('net.connected'):I18N.t('net.disconnected');
 }
 function startNetWatcher(){
   updateNetStatus();
@@ -797,6 +827,7 @@ function startNetWatcher(){
 
 // ── Init ──
 applyTheme();        // System-Theme sofort anwenden (vor Settings-Load)
+I18N.setLang(I18N.detectLang()); // Sprache sofort anwenden, loadSettings überschreibt ggf. mit gespeicherter Wahl
 renderAccentSlots();
 loadSettings();
 startProfileWatcher();
