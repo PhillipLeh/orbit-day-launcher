@@ -198,9 +198,10 @@
           const el = document.createElement('div');
           el.className = 'app-item selected'; el.dataset.id = app.id;
           el.innerHTML = `<div class="a-dot" style="background:${color}"></div>
-            <div class="a-name">${app.name}</div>
+            <div class="a-name"></div>
             <div class="a-tag">${app.app_type==='store'?I18N.t('common.store'):'.exe'}</div>
             <div class="a-check">✓</div>`;
+          el.querySelector('.a-name').textContent = app.name;
           el.onclick = () => el.classList.toggle('selected');
           list.appendChild(el);
         });

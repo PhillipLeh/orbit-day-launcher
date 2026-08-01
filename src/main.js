@@ -43,6 +43,9 @@ function setLanguage(lang){
 }
 
 // ── Helpers ──
+// HTML-Escaping: neutralisiert nutzergesteuerte Strings (Programm-/Bundle-/Profilnamen,
+// IDs) bevor sie in innerHTML/Attribute fließen. Deckt Text- und Attribut-Kontext ab.
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function getColor(id){ return appColors[id]||DEFAULT_COLORS[id]||ALL_PROGRAMS.find(p=>p.id===id)?.color||'#00e5ff'; }
 function hexToRgb(hex){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `${r},${g},${b}`; }
 function markDirty(){ isDirty=true; const d=document.getElementById('saveDisk'); if(d){d.classList.add('dirty');d.classList.remove('saved');} }
@@ -262,7 +265,9 @@ function renderKiCards(){
       div.addEventListener('dragleave',onCardDragLeave);
       div.addEventListener('drop',onCardDrop);
       div.addEventListener('dragend',onCardDragEnd);
-      div.innerHTML=`<div class="ki-close" onclick="removeProgram2(event,'${p.id}')">&#10005;</div><div class="ki-name">${p.name}</div><div class="ki-check"></div>`;
+      div.innerHTML=`<div class="ki-close">&#10005;</div><div class="ki-name"></div><div class="ki-check"></div>`;
+      div.querySelector('.ki-name').textContent=p.name;
+      div.querySelector('.ki-close').addEventListener('click',e=>removeProgram2(e,p.id));
     }
     container.appendChild(div); // verschiebt vorhandene Knoten ans Ende → DOM folgt Array-Reihenfolge
   });
@@ -303,7 +308,12 @@ function renderProgramList(){
     progs.forEach(p=>{
       const color=getColor(p.id);
       const el=document.createElement('div'); el.className='prog-item';
-      el.innerHTML=`<div class="prog-dot" style="background:${color}"></div><div class="prog-name">${p.name}</div><div class="prog-actions"><div class="prog-color-btn" style="background:${color}" onclick="document.getElementById('pc-${p.id}').click()"></div><input type="color" id="pc-${p.id}" class="color-input" value="${color}" oninput="updateProgColor('${p.id}',this.value,this)"/><div class="prog-del" onclick="removeProgram('${p.id}')">✕</div></div>`;
+      el.innerHTML=`<div class="prog-dot" style="background:${esc(color)}"></div><div class="prog-name"></div><div class="prog-actions"><div class="prog-color-btn" style="background:${esc(color)}"></div><input type="color" class="color-input" value="${esc(color)}"/><div class="prog-del">✕</div></div>`;
+      el.querySelector('.prog-name').textContent=p.name;
+      const ci=el.querySelector('.color-input');
+      el.querySelector('.prog-color-btn').addEventListener('click',()=>ci.click());
+      ci.addEventListener('input',()=>updateProgColor(p.id,ci.value,ci));
+      el.querySelector('.prog-del').addEventListener('click',()=>removeProgram(p.id));
       list.appendChild(el);
     });
   });
@@ -417,7 +427,7 @@ function renderBundleList(){
   if(!bundles.length){list.innerHTML=`<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4);text-align:center;padding:6px;letter-spacing:1px">${I18N.t('bundles.none')}</div>`;return;}
   bundles.forEach((b,i)=>{
     const el=document.createElement('div'); el.className='bundle-item'+(activeBundleIdx===i?' active':'');
-    el.innerHTML=`<div class="bundle-item-info" onclick="selectBundle(${i})"><div class="bundle-item-name">${b.name.toUpperCase()}</div><div class="bundle-item-apps">${b.programs.map(id=>ALL_PROGRAMS.find(p=>p.id===id)?.name||id).join(' · ')}</div></div><div class="bundle-item-btns"><div class="bundle-edit-btn" onclick="openBundleEditor(${i})">&#9998;</div><div class="bundle-item-del" onclick="deleteBundle(event,${i})">✕</div></div>`;
+    el.innerHTML=`<div class="bundle-item-info" onclick="selectBundle(${i})"><div class="bundle-item-name">${esc(b.name.toUpperCase())}</div><div class="bundle-item-apps">${esc(b.programs.map(id=>ALL_PROGRAMS.find(p=>p.id===id)?.name||id).join(' · '))}</div></div><div class="bundle-item-btns"><div class="bundle-edit-btn" onclick="openBundleEditor(${i})">&#9998;</div><div class="bundle-item-del" onclick="deleteBundle(event,${i})">✕</div></div>`;
     list.appendChild(el);
   });
   renderBundleColorList();
@@ -428,7 +438,11 @@ function renderBundleColorList(){
   bundles.forEach((b,i)=>{
     const color=bundleColors[b.name]||'#00e5ff';
     const el=document.createElement('div'); el.className='color-editor-item';
-    el.innerHTML=`<div class="color-editor-name">${b.name}</div><div class="color-editor-right"><div class="color-preview" style="background:${color}" onclick="document.getElementById('bci-${i}').click()"></div><input class="color-input" id="bci-${i}" type="color" value="${color}" oninput="updateBundleColor('${b.name}',this.value,${i})"/></div>`;
+    el.innerHTML=`<div class="color-editor-name"></div><div class="color-editor-right"><div class="color-preview" style="background:${esc(color)}"></div><input class="color-input" type="color" value="${esc(color)}"/></div>`;
+    el.querySelector('.color-editor-name').textContent=b.name;
+    const ci=el.querySelector('.color-input'), prev=el.querySelector('.color-preview');
+    prev.addEventListener('click',()=>ci.click());
+    ci.addEventListener('input',()=>{ prev.style.background=ci.value; updateBundleColor(b.name,ci.value,i); });
     list.appendChild(el);
   });
 }
@@ -442,7 +456,7 @@ function openBundleEditor(idx){
   document.getElementById('bundleEditorTitle').textContent=b.name.toUpperCase();
   const color=bundleColors[b.name]||'#00e5ff'; document.getElementById('bundleColorPreview').style.background=color; document.getElementById('bundleColorInput').value=color;
   const progList=document.getElementById('bundleProgList'); progList.innerHTML='';
-  ALL_PROGRAMS.forEach(p=>{ const inBundle=b.programs.includes(p.id); const el=document.createElement('div'); el.className='bundle-prog-item'+(inBundle?' selected':''); el.dataset.id=p.id; el.innerHTML=`<div class="bundle-prog-dot" style="background:${getColor(p.id)}"></div>${p.name}`; el.onclick=()=>el.classList.toggle('selected'); progList.appendChild(el); });
+  ALL_PROGRAMS.forEach(p=>{ const inBundle=b.programs.includes(p.id); const el=document.createElement('div'); el.className='bundle-prog-item'+(inBundle?' selected':''); el.dataset.id=p.id; el.innerHTML=`<div class="bundle-prog-dot" style="background:${esc(getColor(p.id))}"></div>`; el.append(p.name); el.onclick=()=>el.classList.toggle('selected'); progList.appendChild(el); });
   const ed=document.getElementById('bundleEditDelay'); if(ed){ ed.value=b.delay||0; document.getElementById('bundleEditDelayVal').textContent=((b.delay||0)*0.5).toFixed(1)+'s'; }
   editor.style.display='flex';
 }
@@ -463,7 +477,7 @@ function deactivateBundle(){
 function deleteBundle(event,idx){ event.stopPropagation(); bundles.splice(idx,1); if(activeBundleIdx===idx) deactivateBundle(); else if(activeBundleIdx>idx) activeBundleIdx--; renderBundleList(); renderBundleQuick(); markDirty(); }
 let bundleOrder=[];
 function showBundleCreator(){ bundleOrder=[]; document.getElementById('bundleNameInput').value=''; const d=document.getElementById('bundleCreateDelay'); if(d){ d.value=0; document.getElementById('bundleCreateDelayVal').textContent='0.0s'; } renderBundleProgSelect(); }
-function renderBundleProgSelect(){ const c=document.getElementById('bundleProgramSelect'); if(!c) return; c.innerHTML=''; ALL_PROGRAMS.forEach(p=>{ const el=document.createElement('div'); el.className='bundle-prog-item'; el.dataset.id=p.id; el.innerHTML=`<div class="bundle-prog-dot" style="background:${getColor(p.id)}"></div><span>${p.name}</span><div class="bundle-order-num"></div>`; el.onclick=()=>toggleBundleProgram(el,p.id); c.appendChild(el); }); }
+function renderBundleProgSelect(){ const c=document.getElementById('bundleProgramSelect'); if(!c) return; c.innerHTML=''; ALL_PROGRAMS.forEach(p=>{ const el=document.createElement('div'); el.className='bundle-prog-item'; el.dataset.id=p.id; el.innerHTML=`<div class="bundle-prog-dot" style="background:${esc(getColor(p.id))}"></div><span></span><div class="bundle-order-num"></div>`; el.querySelector('span').textContent=p.name; el.onclick=()=>toggleBundleProgram(el,p.id); c.appendChild(el); }); }
 function toggleBundleProgram(el,id){ if(el.classList.contains('selected')){el.classList.remove('selected');bundleOrder=bundleOrder.filter(x=>x!==id);}else{el.classList.add('selected');bundleOrder.push(id);} document.querySelectorAll('#bundleProgramSelect .bundle-prog-item').forEach(item=>{ const num=item.querySelector('.bundle-order-num'); if(!num) return; const idx=bundleOrder.indexOf(item.dataset.id); num.textContent=idx>=0?idx+1:''; }); }
 function saveBundle(){ const name=document.getElementById('bundleNameInput').value.trim(); if(!name||!bundleOrder.length) return; const delay=parseInt(document.getElementById('bundleCreateDelay').value)||0; bundles.push({name,programs:[...bundleOrder],delay}); bundleOrder=[]; document.getElementById('bundleNameInput').value=''; const d=document.getElementById('bundleCreateDelay'); if(d){ d.value=0; document.getElementById('bundleCreateDelayVal').textContent='0.0s'; } renderBundleProgSelect(); renderBundleList(); renderBundleQuick(); renderProfileBundleOptions(); markDirty(); }
 
@@ -483,7 +497,7 @@ function renderProfileList(){
     const exists=bundles.some(b=>b.name===p.bundle);
     const el=document.createElement('div'); el.className='bundle-item';
     const days=(p.days&&p.days.length)?p.days.map(d=>I18N.t('day.'+d.toLowerCase())).join('·'):I18N.t('profiles.daily');
-    el.innerHTML=`<div class="bundle-item-info"><div class="bundle-item-name">${p.name.toUpperCase()} · ${p.time}</div><div class="bundle-item-apps">${exists?p.bundle:'<span style=\"color:#ff6666\">'+I18N.t('profiles.bundleMissing')+'</span>'} · ${days}</div></div><div class="bundle-item-btns"><div class="bundle-item-del" onclick="deleteProfile(${i})">✕</div></div>`;
+    el.innerHTML=`<div class="bundle-item-info"><div class="bundle-item-name">${esc(p.name.toUpperCase())} · ${esc(p.time)}</div><div class="bundle-item-apps">${exists?esc(p.bundle):'<span style="color:#ff6666">'+esc(I18N.t('profiles.bundleMissing'))+'</span>'} · ${days}</div></div><div class="bundle-item-btns"><div class="bundle-item-del" onclick="deleteProfile(${i})">✕</div></div>`;
     list.appendChild(el);
   });
 }
@@ -575,12 +589,12 @@ function updateStartBtn(){
   const btn=document.getElementById('btnStart');
   if(closeMode){
     // Im Schließen-Modus: Button schließt die Auswahl
-    if(activeBundleIdx>=0){const b=bundles[activeBundleIdx];btn.innerHTML=`&#9632; ${b.name.toUpperCase()} ${I18N.t('mode.close').replace('■ ','').toUpperCase()}`;}
+    if(activeBundleIdx>=0){const b=bundles[activeBundleIdx];btn.innerHTML=`&#9632; ${esc(b.name.toUpperCase())} ${esc(I18N.t('mode.close').replace('■ ','').toUpperCase())}`;}
     else btn.innerHTML=I18N.t('btn.closeAllSelected');
     btn.classList.remove('ready-state');
     return;
   }
-  if(activeBundleIdx>=0){const b=bundles[activeBundleIdx];btn.innerHTML=bundleReady?`&#9654; ${b.name.toUpperCase()}`:`&#9646;&#9646; ${b.name.toUpperCase()}`;btn.classList.add('ready-state');}else{btn.innerHTML=I18N.t('btn.startAll');btn.classList.remove('ready-state');bundleReady=false;}
+  if(activeBundleIdx>=0){const b=bundles[activeBundleIdx];btn.innerHTML=bundleReady?`&#9654; ${esc(b.name.toUpperCase())}`:`&#9646;&#9646; ${esc(b.name.toUpperCase())}`;btn.classList.add('ready-state');}else{btn.innerHTML=I18N.t('btn.startAll');btn.classList.remove('ready-state');bundleReady=false;}
 }
 function handleStartBtn(){
   if(closeMode){ closeSelected(); return; }
@@ -780,7 +794,7 @@ async function startSequence(){
   // Lade-Animation: Dauer an Delay anpassen, damit sie den echten Start grob begleitet
   const baseStep=Math.max(800, stepMs+300);
   const perApp=Math.floor(90/selected.length);let steps=[],pct=0;
-  selected.forEach(id=>{const name=ALL_PROGRAMS.find(p=>p.id===id)?.name||id;steps.push({pct:pct+Math.floor(perApp*0.4),label:I18N.t('start.startingApp',{name})});pct+=perApp;steps.push({pct,label:I18N.t('start.readyApp',{name})});});
+  selected.forEach(id=>{const name=esc(ALL_PROGRAMS.find(p=>p.id===id)?.name||id);steps.push({pct:pct+Math.floor(perApp*0.4),label:I18N.t('start.startingApp',{name})});pct+=perApp;steps.push({pct,label:I18N.t('start.readyApp',{name})});});
   steps.push({pct:100,label:I18N.t('start.systemsOnline')});
   let dotCount=0;
   const di=setInterval(()=>{dotCount=(dotCount+1)%4;const d=document.getElementById('dots');if(d)d.textContent='.'.repeat(dotCount);},400);
@@ -788,7 +802,7 @@ async function startSequence(){
   steps.forEach((step,i)=>{const delay=500+i*baseStep;lastDelay=delay;setTimeout(()=>{bar.style.width=step.pct+'%';percent.textContent=step.pct+'%';if(step.pct<100)statusEl.innerHTML=step.label+'<span id="dots">'+'.'.repeat(dotCount)+'</span>';},delay);});
   setTimeout(async()=>{clearInterval(di);
     // Ehrliches Endergebnis: bei Fehlern Hinweis statt nur "Systems online"
-    if(failed.length){ statusEl.style.display='block'; statusEl.innerHTML='<span style="color:#ff6666">'+I18N.t('start.notStarted',{n:failed.length})+'</span> '+failed.join(', '); bar.style.background='#ff4444'; }
+    if(failed.length){ statusEl.style.display='block'; statusEl.innerHTML='<span style="color:#ff6666">'+I18N.t('start.notStarted',{n:failed.length})+'</span> '+esc(failed.join(', ')); bar.style.background='#ff4444'; }
     else statusEl.style.display='none';
     ready.style.display='block';
     setTimeout(()=>resetToSelect(),5000);   // nach 5s zurück zum Start-Frontend
