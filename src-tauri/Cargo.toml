@@ -5,10 +5,6 @@ description = "Orbit Day Launcher"
 authors = []
 edition = "2021"
 
-[lib]
-name = "orbit_day_launcher_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
-
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

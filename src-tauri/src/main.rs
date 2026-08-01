@@ -269,10 +269,19 @@ fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
 fn save_settings(app: tauri::AppHandle, settings: String) -> Result<(), String> {
     let path = app.path().app_data_dir().map_err(|e| e.to_string())?.join("settings.json");
     fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
-    fs::write(&path, &settings).map_err(|e| e.to_string())?;
-    // Verifizieren dass wirklich geschrieben wurde
-    let written = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    if written != settings { return Err("Verify failed".to_string()); }
+    // Atomar schreiben: erst in eine temporäre Datei im selben Verzeichnis, verifizieren,
+    // dann per Rename ersetzen (Windows: MoveFileEx mit Replace-Semantik). So bleibt
+    // settings.json bei einem Absturz/Stromausfall mitten im Schreiben unversehrt —
+    // statt halb geschrieben/leer und damit unlesbar.
+    let tmp = path.with_extension("tmp");
+    fs::write(&tmp, &settings).map_err(|e| e.to_string())?;
+    // Read-Back-Verify auf der temporären Datei, bevor sie das Original ersetzt.
+    let written = fs::read_to_string(&tmp).map_err(|e| e.to_string())?;
+    if written != settings {
+        let _ = fs::remove_file(&tmp);
+        return Err("Verify failed".to_string());
+    }
+    fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
     Ok(())
 }
 
