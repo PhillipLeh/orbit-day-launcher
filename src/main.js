@@ -1,7 +1,7 @@
 const { invoke } = window.__TAURI__.core;
 
 const DEFAULT_COLORS = { claude:'#ff6b35', codex:'#4d9fff', antigravity:'#39d98a' };
-const CAT_COLORS = { 'KI':'#ff6b35','Browser':'#4d9fff','Entwicklung':'#7c4dff','Office':'#39d98a','Kommunikation':'#00e5ff','Unterhaltung':'#f0a500','Gaming':'#ff4444','Produktivität':'#a0ff00','Medien':'#ff69b4','Web':'#00bcd4','Verknüpfung':'#ff8c42' };
+const CAT_COLORS = { 'KI':'#ff6b35','Browser':'#4d9fff','Entwicklung':'#7c4dff','Office':'#39d98a','Kommunikation':'#00e5ff','Unterhaltung':'#f0a500','Gaming':'#ff4444','Produktivität':'#a0ff00','Medien':'#ff69b4','Web':'#00bcd4','Verknüpfung':'#ff8c42','Tools':'#00d4a8','Sonstige':'#b06bff' };
 const SPEED_MAP  = [14, 10, 7, 4, 2];
 const SPEED_DOTS = ['●○○○○','●●○○○','●●●○○','●●●●○','●●●●●'];
 

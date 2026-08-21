@@ -358,6 +358,26 @@ fn register_default_shortcut(app: &tauri::App) -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
+// Merkt dauerhaft, dass das Onboarding einmal gezeigt wurde. Wird aufgerufen,
+// sobald das Fenster eingeblendet ist — unabhängig davon, wie der Nutzer es
+// verlässt („Los geht's", „Überspringen" oder einfach zuklicken). Sonst käme
+// die Programmsuche bei jedem Start erneut hoch. Manuell auslösen lässt sie
+// sich weiterhin jederzeit über die Einstellungen ("Neu suchen").
+// Bestehende Einstellungen werden dabei zusammengeführt, nicht überschrieben.
+fn mark_onboarding_seen(path: &std::path::Path) {
+    let mut v = fs::read_to_string(path).ok()
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+        .unwrap_or_else(|| serde_json::json!({}));
+    if !v.is_object() { v = serde_json::json!({}); }
+    v["onboardingDone"] = serde_json::Value::Bool(true);
+    if let Some(dir) = path.parent() { let _ = fs::create_dir_all(dir); }
+    if let Ok(s) = serde_json::to_string(&v) {
+        // gleiche Atomarität wie save_settings: Temp-Datei + Rename
+        let tmp = path.with_extension("tmp");
+        if fs::write(&tmp, &s).is_ok() { let _ = fs::rename(&tmp, path); }
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -380,6 +400,8 @@ fn main() {
             } else {
                 if let Some(w) = app.get_webview_window("onboarding") { let _ = w.show(); }
                 if let Some(w) = app.get_webview_window("main") { let _ = w.hide(); }
+                // Sofort als gesehen markieren → erscheint ab dem zweiten Start nie wieder.
+                mark_onboarding_seen(&settings_path);
             }
 
             // Tray
