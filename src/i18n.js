@@ -37,6 +37,8 @@ const DICT = {
 
   'settings.alwaysOnTop': { de: 'Immer im Vordergrund', en: 'Always on Top', es: 'Siempre visible', hi: 'हमेशा सबसे ऊपर', fr: 'Toujours au premier plan' },
   'settings.autostartWindows': { de: 'Autostart mit Windows', en: 'Start with Windows', es: 'Iniciar con Windows', hi: 'Windows के साथ शुरू करें', fr: 'Démarrer avec Windows' },
+  'settings.onboardingAlways': { de: 'Setup-Assistent bei jedem Start', en: 'Show setup wizard on every start', es: 'Asistente de configuración en cada inicio', hi: 'हर बार शुरू होने पर सेटअप विज़ार्ड', fr: 'Assistant de configuration à chaque démarrage' },
+  'settings.onboardingHint': { de: 'Normalerweise erscheint die Programmsuche nur beim allerersten Start. Aktiviere dies, um sie bei jedem Start zu sehen.', en: 'Normally the program search only appears on the very first start. Enable this to see it every time.', es: 'Normalmente la búsqueda de programas solo aparece en el primer inicio. Actívalo para verla siempre.', hi: 'आम तौर पर प्रोग्राम खोज केवल पहली बार शुरू होने पर दिखती है। इसे हर बार देखने के लिए सक्षम करें।', fr: 'Normalement, la recherche de programmes n\'apparaît qu\'au tout premier démarrage. Activez ceci pour la voir à chaque fois.' },
   'settings.weekdays': { de: 'Wochentage', en: 'Weekdays', es: 'Días de la semana', hi: 'सप्ताह के दिन', fr: 'Jours de la semaine' },
 
   'day.mo': { de: 'Mo', en: 'Mon', es: 'Lu', hi: 'सोम', fr: 'Lu' },

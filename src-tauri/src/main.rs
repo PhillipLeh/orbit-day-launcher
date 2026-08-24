@@ -387,21 +387,25 @@ fn main() {
             // Onboarding-Check
             let settings_path = app.path().app_data_dir()
                 .map(|p| p.join("settings.json")).unwrap_or_default();
-            let onboarding_done = if settings_path.exists() {
-                fs::read_to_string(&settings_path).ok()
-                    .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
-                    .and_then(|v| v["onboardingDone"].as_bool())
-                    .unwrap_or(false)
-            } else { false };
+            let settings_val = fs::read_to_string(&settings_path).ok()
+                .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok());
+            let onboarding_done = settings_val.as_ref()
+                .and_then(|v| v["onboardingDone"].as_bool()).unwrap_or(false);
+            // Nutzer-Schalter aus den Einstellungen: Assistent bewusst bei JEDEM
+            // Start zeigen (z.B. zum Prüfen der Programmsuche). Überstimmt das
+            // "schon gesehen"-Flag.
+            let onboarding_always = settings_val.as_ref()
+                .and_then(|v| v["onboardingAlways"].as_bool()).unwrap_or(false);
 
-            if onboarding_done {
+            if onboarding_done && !onboarding_always {
                 if let Some(w) = app.get_webview_window("main") { let _ = w.show(); }
                 if let Some(w) = app.get_webview_window("onboarding") { let _ = w.hide(); }
             } else {
                 if let Some(w) = app.get_webview_window("onboarding") { let _ = w.show(); }
                 if let Some(w) = app.get_webview_window("main") { let _ = w.hide(); }
-                // Sofort als gesehen markieren → erscheint ab dem zweiten Start nie wieder.
-                mark_onboarding_seen(&settings_path);
+                // Nur beim echten Erstlauf als gesehen markieren — bei aktivem
+                // Schalter bleibt der Assistent absichtlich bei jedem Start aktiv.
+                if !onboarding_always { mark_onboarding_seen(&settings_path); }
             }
 
             // Tray

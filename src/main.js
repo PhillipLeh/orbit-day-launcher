@@ -19,6 +19,7 @@ let customAccents=[null,null]; // zwei speicherbare Custom-Akzent-Slots
 let editingSlot=-1;
 let dragSrcId=null, suppressNextClick=false;
 let autostartEnabled=false, autostartDays=['Mo','Di','Mi','Do','Fr'];
+let onboardingAlways=false; // true = Setup-Assistent bei JEDEM Start zeigen (sonst nur beim ersten)
 let editingBundleIdx=-1, layoutMode='pyramid', gridCols=4;
 let orbitCount=2, orbitSizes=[90,140,200], orbitSpeeds=[3,2,1];
 let scKey='O'; // Strg+Alt sind fest, nur dritte Taste frei
@@ -577,6 +578,9 @@ function applyZoom(zoom){ const wrap=document.getElementById('zoomWrap'); wrap.c
 function setZoom(zoom){ currentZoom=zoom; applyZoom(zoom); markDirty(); }
 async function toggleAlwaysOnTop(){ alwaysOnTop=!alwaysOnTop; markDirty(); document.getElementById('toggle-ontop').classList.toggle('active',alwaysOnTop); try{await invoke('set_always_on_top',{value:alwaysOnTop});}catch(e){} }
 function toggleAutostart(){ autostartEnabled=!autostartEnabled; markDirty(); document.getElementById('toggle-autostart').classList.toggle('active',autostartEnabled); }
+// Setup-Assistent (Programmsuche) bei jedem Start zeigen statt nur beim ersten.
+// Praktisch zum Testen — und für alle, die die Suche regelmäßig sehen wollen.
+function toggleOnboardingAlways(){ onboardingAlways=!onboardingAlways; markDirty(); document.getElementById('toggle-onboarding')?.classList.toggle('active',onboardingAlways); }
 function toggleDay(btn){ const day=btn.dataset.day; btn.classList.toggle('active'); if(btn.classList.contains('active')){if(!autostartDays.includes(day)) autostartDays.push(day);}else autostartDays=autostartDays.filter(d=>d!==day); markDirty(); }
 
 // ── Karten ──
@@ -682,7 +686,7 @@ function captureKey(e){
 // ── Speichern / Laden ──
 async function saveAll(){
   const customProgs=ALL_PROGRAMS.filter(p=>!['claude','codex','antigravity'].includes(p.id));
-  const s={alwaysOnTop,autoSize,sizeId:currentSizeId,zoom:currentZoom,hiddenCards:[...hiddenCards],bundles,appColors,bundleColors,autostartEnabled,autostartDays,customPrograms:customProgs,onboardingDone:true,layoutMode,gridCols,orbitCount,orbitSizes,orbitSpeeds,scKey,lastActivePrograms,globalDelay,profiles,themeMode,accentColor,customAccents,deletedBasePrograms,programOrder:ALL_PROGRAMS.map(p=>p.id),languageMode};
+  const s={alwaysOnTop,autoSize,sizeId:currentSizeId,zoom:currentZoom,hiddenCards:[...hiddenCards],bundles,appColors,bundleColors,autostartEnabled,autostartDays,customPrograms:customProgs,onboardingDone:true,onboardingAlways,layoutMode,gridCols,orbitCount,orbitSizes,orbitSpeeds,scKey,lastActivePrograms,globalDelay,profiles,themeMode,accentColor,customAccents,deletedBasePrograms,programOrder:ALL_PROGRAMS.map(p=>p.id),languageMode};
   try{
     await invoke('save_settings',{settings:JSON.stringify(s)});
     try{await invoke('set_autostart',{enable:autostartEnabled,days:autostartDays});}catch(e){}
@@ -716,6 +720,7 @@ async function loadSettings(){
     if(s.bundles){bundles=s.bundles;renderBundleList();renderBundleQuick();}
     if(s.autostartEnabled!==undefined){autostartEnabled=s.autostartEnabled;document.getElementById('toggle-autostart').classList.toggle('active',autostartEnabled);}
     if(s.autostartDays){autostartDays=s.autostartDays;document.querySelectorAll('.day-btn').forEach(btn=>btn.classList.toggle('active',autostartDays.includes(btn.dataset.day)));}
+    if(s.onboardingAlways!==undefined){onboardingAlways=!!s.onboardingAlways;document.getElementById('toggle-onboarding')?.classList.toggle('active',onboardingAlways);}
     if(s.layoutMode){layoutMode=s.layoutMode;document.getElementById('layout-'+layoutMode)?.classList.add('active');document.getElementById('layout-'+(layoutMode==='pyramid'?'grid':'pyramid'))?.classList.remove('active');if(layoutMode==='grid') document.getElementById('gridColsSetting').style.display='block';}
     if(s.gridCols){gridCols=s.gridCols;[3,4,5,6,7].forEach(i=>document.getElementById('cols-'+i)?.classList.toggle('active',i===gridCols));}
     if(s.orbitCount){orbitCount=s.orbitCount;[1,2,3].forEach(i=>document.getElementById('orb-'+i)?.classList.toggle('active',i===orbitCount));document.getElementById('orbSizeRow1').style.display=orbitCount>=2?'flex':'none';document.getElementById('orbSizeRow2').style.display=orbitCount>=3?'flex':'none';document.getElementById('orbSpeedRow1').style.display=orbitCount>=2?'flex':'none';document.getElementById('orbSpeedRow2').style.display=orbitCount>=3?'flex':'none';}

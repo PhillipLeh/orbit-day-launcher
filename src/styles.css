@@ -58,6 +58,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .tab-content.active{display:flex}
 .setting-group{display:flex;flex-direction:column;gap:8px;padding-bottom:14px;border-bottom:1px solid rgba(var(--accent-rgb),0.07)}
 .setting-label{font-size:10px;letter-spacing:3px;color:rgba(var(--ui-text-rgb),0.4)}
+/* Erklaerender Kleintext unter einer Einstellung (Fliesstext, daher wenig Sperrung) */
+.setting-hint{font-size:9.5px;line-height:1.5;letter-spacing:0.4px;color:rgba(var(--ui-text-rgb),0.32)}
 .size-options{display:flex;gap:6px;flex-wrap:wrap}
 .size-btn{flex:1;min-width:44px;padding:7px 4px;background:rgba(var(--accent-rgb),0.05);border:1px solid rgba(var(--accent-rgb),0.2);color:rgba(var(--ui-text-rgb),0.5);font-family:'Segoe UI',Arial,sans-serif;font-size:10px;letter-spacing:1px;border-radius:4px;cursor:pointer;transition:all 0.2s}
 .size-btn:hover{background:rgba(var(--accent-rgb),0.1);border-color:rgba(var(--accent-rgb),0.6);color:rgb(var(--ui-text-rgb))}
