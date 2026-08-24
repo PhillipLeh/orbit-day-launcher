@@ -37,6 +37,17 @@ const DICT = {
 
   'settings.alwaysOnTop': { de: 'Immer im Vordergrund', en: 'Always on Top', es: 'Siempre visible', hi: 'हमेशा सबसे ऊपर', fr: 'Toujours au premier plan' },
   'settings.autostartWindows': { de: 'Autostart mit Windows', en: 'Start with Windows', es: 'Iniciar con Windows', hi: 'Windows के साथ शुरू करें', fr: 'Démarrer avec Windows' },
+  // Tray-Menue (Rechtsklick auf das Taskleisten-Symbol)
+  'tray.start':    { de: 'Starten', en: 'Start', es: 'Iniciar', hi: 'शुरू करें', fr: 'Démarrer' },
+  'tray.close':    { de: 'Schließen', en: 'Close', es: 'Cerrar', hi: 'बंद करें', fr: 'Fermer' },
+  'tray.startAll': { de: 'Alles starten', en: 'Start everything', es: 'Iniciar todo', hi: 'सब कुछ शुरू करें', fr: 'Tout démarrer' },
+  'tray.closeAll': { de: 'Alles schließen', en: 'Close everything', es: 'Cerrar todo', hi: 'सब कुछ बंद करें', fr: 'Tout fermer' },
+  'tray.show':     { de: 'Öffnen', en: 'Open', es: 'Abrir', hi: 'खोलें', fr: 'Ouvrir' },
+  'tray.quit':     { de: 'Beenden', en: 'Quit', es: 'Salir', hi: 'बाहर निकलें', fr: 'Quitter' },
+  // Löschschutz (Reiter Profile)
+  'settings.deleteGuard':     { de: 'Löschschutz', en: 'Delete protection', es: 'Protección al borrar', hi: 'हटाने से सुरक्षा', fr: 'Protection de suppression' },
+  'settings.deleteGuardHint': { de: 'Programmkarten lassen sich nur löschen, solange du diese Taste gedrückt hältst. Die Löschen-Knöpfe werden dann rot und wackeln.', en: 'Program cards can only be deleted while you hold this key. The delete buttons then turn red and wiggle.', es: 'Las tarjetas solo se pueden borrar mientras mantienes esta tecla. Los botones se vuelven rojos y se mueven.', hi: 'प्रोग्राम कार्ड केवल तभी हटाए जा सकते हैं जब आप यह कुंजी दबाए रखें। हटाने के बटन लाल होकर हिलते हैं।', fr: 'Les cartes ne peuvent être supprimées qu\'en maintenant cette touche. Les boutons deviennent rouges et bougent.' },
+  'settings.deleteGuardOff':  { de: 'Aus', en: 'Off', es: 'No', hi: 'बंद', fr: 'Off' },
   'settings.onboardingAlways': { de: 'Setup-Assistent bei jedem Start', en: 'Show setup wizard on every start', es: 'Asistente de configuración en cada inicio', hi: 'हर बार शुरू होने पर सेटअप विज़ार्ड', fr: 'Assistant de configuration à chaque démarrage' },
   'settings.onboardingHint': { de: 'Standardmäßig aktiv: Die Programmsuche läuft bei jedem Start. Ausschalten, wenn sie nur beim allerersten Start erscheinen soll.', en: 'On by default: the program search runs on every start. Turn it off to see it only on the very first start.', es: 'Activado por defecto: la búsqueda de programas se ejecuta en cada inicio. Desactívalo para verla solo en el primer inicio.', hi: 'डिफ़ॉल्ट रूप से चालू: प्रोग्राम खोज हर बार शुरू होने पर चलती है। इसे बंद करें ताकि यह केवल पहली बार दिखे।', fr: 'Activé par défaut : la recherche de programmes s\'exécute à chaque démarrage. Désactivez-la pour ne la voir qu\'au tout premier démarrage.' },
   'settings.weekdays': { de: 'Wochentage', en: 'Weekdays', es: 'Días de la semana', hi: 'सप्ताह के दिन', fr: 'Jours de la semaine' },

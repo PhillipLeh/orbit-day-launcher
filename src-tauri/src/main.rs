@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use std::process::Command;
 use std::fs;
-use tauri::{Manager, menu::{MenuBuilder, MenuItemBuilder}, tray::TrayIconBuilder};
+use tauri::{Manager, Emitter, menu::{MenuBuilder, SubmenuBuilder}, tray::TrayIconBuilder};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 use tauri_plugin_opener::OpenerExt;
 
@@ -378,6 +378,76 @@ fn mark_onboarding_seen(path: &std::path::Path) {
     }
 }
 
+// ── Tray-Menue ────────────────────────────────────────────────────────────────
+// Beschriftungen kommen aus dem Frontend (dort liegt die Uebersetzung), damit das
+// Tray-Menue der eingestellten Sprache folgt. Beim Start dienen die Werte hier als
+// Fallback, bis das Frontend geladen ist und `update_tray_menu` aufruft.
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TrayLabels {
+    start: String, close: String, start_all: String, close_all: String,
+    show: String, quit: String,
+}
+impl Default for TrayLabels {
+    fn default() -> Self {
+        Self {
+            start: "Starten".into(), close: "Schließen".into(),
+            start_all: "Alles starten".into(), close_all: "Alles schließen".into(),
+            show: "Öffnen".into(), quit: "Beenden".into(),
+        }
+    }
+}
+
+// Bundle-Namen aus der settings.json lesen (fuer das Tray-Menue beim Start).
+fn read_bundle_names(path: &std::path::Path) -> Vec<String> {
+    fs::read_to_string(path).ok()
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+        .and_then(|v| v["bundles"].as_array().map(|arr| {
+            arr.iter().filter_map(|b| b["name"].as_str().map(|s| s.to_string())).collect()
+        }))
+        .unwrap_or_default()
+}
+
+// Baut: Starten ▸ [Alles starten | Bundles…] · Schließen ▸ [Alles schließen | Bundles…]
+//       ─────── · Öffnen · Beenden
+// Die Menue-IDs ("start:all", "start:0", "close:2", …) wertet das Frontend aus.
+fn build_tray_menu(
+    app: &tauri::AppHandle,
+    bundles: &[String],
+    l: &TrayLabels,
+) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    let mut start = SubmenuBuilder::new(app, &l.start).text("start:all", &l.start_all);
+    if !bundles.is_empty() { start = start.separator(); }
+    for (i, name) in bundles.iter().enumerate() {
+        start = start.text(format!("start:{}", i), name);
+    }
+    let start = start.build()?;
+
+    let mut close = SubmenuBuilder::new(app, &l.close).text("close:all", &l.close_all);
+    if !bundles.is_empty() { close = close.separator(); }
+    for (i, name) in bundles.iter().enumerate() {
+        close = close.text(format!("close:{}", i), name);
+    }
+    let close = close.build()?;
+
+    MenuBuilder::new(app)
+        .items(&[&start, &close])
+        .separator()
+        .text("show", &l.show)
+        .text("quit", &l.quit)
+        .build()
+}
+
+// Wird vom Frontend aufgerufen, sobald sich Bundles oder die Sprache aendern.
+#[tauri::command]
+fn update_tray_menu(app: tauri::AppHandle, bundles: Vec<String>, labels: TrayLabels) -> Result<(), String> {
+    let menu = build_tray_menu(&app, &bundles, &labels).map_err(|e| e.to_string())?;
+    if let Some(tray) = app.tray_by_id("main") {
+        tray.set_menu(Some(menu)).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -410,17 +480,24 @@ fn main() {
                 if !onboarding_always { mark_onboarding_seen(&settings_path); }
             }
 
-            // Tray
-            let show = MenuItemBuilder::with_id("show", "Öffnen").build(app)?;
-            let quit = MenuItemBuilder::with_id("quit", "Beenden").build(app)?;
-            let menu = MenuBuilder::new(app).items(&[&show, &quit]).build()?;
-            TrayIconBuilder::new()
+            // Tray — Menue aus den gespeicherten Bundles aufbauen.
+            let menu = build_tray_menu(app.handle(), &read_bundle_names(&settings_path), &TrayLabels::default())?;
+            let mut tray = TrayIconBuilder::with_id("main");
+            // OHNE Icon zeigt Windows einen leeren, praktisch unsichtbaren
+            // Tray-Eintrag — genau das war der Grund, warum das Symbol fehlte.
+            if let Some(icon) = app.default_window_icon() {
+                tray = tray.icon(icon.clone());
+            }
+            tray
                 .menu(&menu)
                 .tooltip("Orbit Day Launcher")
+                .show_menu_on_left_click(false)   // Linksklick blendet das Fenster um, Rechtsklick oeffnet das Menue
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     "show" => { if let Some(w) = app.get_webview_window("main") { let _ = w.show(); let _ = w.set_focus(); } }
                     "quit" => app.exit(0),
-                    _ => {}
+                    // Bundle-Aktionen fuehrt das Frontend aus (kennt Programme,
+                    // Reihenfolge und Startverzoegerung). Fenster bleibt zu.
+                    other => { let _ = app.emit("tray-action", other.to_string()); }
                 })
                 .on_tray_icon_event(|tray, event| {
                     if let tauri::tray::TrayIconEvent::Click { .. } = event {
@@ -442,7 +519,7 @@ fn main() {
             launch_app, launch_urls, close_app, close_window, quit_app, open_main_window,
             save_settings, load_settings, check_internet,
             set_always_on_top, set_fullscreen, set_window_size,
-            set_autostart, detect_installed_apps, set_shortcut
+            set_autostart, detect_installed_apps, set_shortcut, update_tray_menu
         ])
         .run(tauri::generate_context!())
         .expect("error");

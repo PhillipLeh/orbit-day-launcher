@@ -44,7 +44,12 @@ once — and Orbit Day Launcher takes care of the rest.
 - **Fully customizable** — Light/Dark/System theme, custom accent color, layout
   (pyramid/grid), window size, and your own keyboard shortcut to show/hide the window
   (default `Ctrl + Alt + O`).
-- **Start with Windows** (optional, with weekday selection) and a system tray icon.
+- **Start with Windows** (optional, with weekday selection).
+- **System tray menu** — right-click the tray icon to start or close any bundle (or
+  everything at once) without opening the window. Left-click shows/hides the launcher.
+- **Delete protection** — the ✕ on a program card only works while you hold a chosen key
+  (Ctrl by default), so a fast click can't remove a program by accident. While the key is
+  held, the delete buttons turn red and wiggle.
 
 ## First run & finding your programs
 
@@ -112,6 +117,31 @@ npm run tauri dev
 # Build a standalone app + installer (output under src-tauri/target/release)
 npm run tauri build
 ```
+
+## The tray menu
+
+Orbit Day Launcher keeps running in the system tray (bottom-right of the taskbar, you may
+need to expand the hidden icons). From there you can drive it without opening the window:
+
+| | |
+|---|---|
+| **Left-click** | show / hide the launcher window |
+| **Right-click → Start ▸** | *Start everything*, or one of your bundles |
+| **Right-click → Close ▸** | *Close everything*, or one of your bundles |
+| **Right-click → Open / Quit** | show the window, or exit the app |
+
+The bundle entries mirror whatever bundles you have saved — create or delete one and the
+menu updates itself. Labels follow the language you picked in the settings.
+
+## Delete protection
+
+Program cards in the launcher have a small ✕ to remove them. To stop a fast click from
+deleting the wrong program, that ✕ only reacts while you **hold a key** — `Ctrl` by
+default. Hold it and every delete button turns red and wiggles, so you can see that
+deleting is now armed.
+
+Change the key (or switch the protection off) under **Settings → Profiles → Delete
+protection**: `Ctrl`, `Shift`, `Alt` or `Off`.
 
 ## Your settings
 

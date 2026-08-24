@@ -20,6 +20,7 @@ let editingSlot=-1;
 let dragSrcId=null, suppressNextClick=false;
 let autostartEnabled=false, autostartDays=['Mo','Di','Mi','Do','Fr'];
 let onboardingAlways=true; // Standard AN: Setup-Assistent bei jedem Start; ausschaltbar in den Einstellungen
+let deleteGuardKey='ctrl'; // ctrl|shift|alt|off — Taste, die zum Löschen von Programmkarten gehalten werden muss
 let editingBundleIdx=-1, layoutMode='pyramid', gridCols=4;
 let orbitCount=2, orbitSizes=[90,140,200], orbitSpeeds=[3,2,1];
 let scKey='O'; // Strg+Alt sind fest, nur dritte Taste frei
@@ -338,8 +339,39 @@ function removeProgram(id){
   if(typeof renderBundleQuick==='function') renderBundleQuick();
   markDirty();
 }
+/* ── Löschschutz: X-Knöpfe nur bei gehaltener Modifier-Taste aktiv ──
+   Verhindert versehentliches Löschen beim schnellen Klicken. */
+function applyDeleteGuard(){
+  document.body.classList.toggle('del-guard', deleteGuardKey!=='off');
+  if(deleteGuardKey==='off') document.body.classList.remove('del-armed');
+  document.querySelectorAll('#delGuardPick button').forEach(b=>b.classList.toggle('active', b.dataset.k===deleteGuardKey));
+}
+function setDeleteGuard(k){ deleteGuardKey=k; applyDeleteGuard(); markDirty(); }
+// Ist die hinterlegte Taste in diesem Event gedrückt?
+function guardHeld(e){
+  return deleteGuardKey==='ctrl' ? e.ctrlKey
+       : deleteGuardKey==='shift'? e.shiftKey
+       : deleteGuardKey==='alt'  ? e.altKey : false;
+}
+function updateArmed(e){
+  if(deleteGuardKey==='off'){ document.body.classList.remove('del-armed'); return; }
+  document.body.classList.toggle('del-armed', guardHeld(e));
+}
+window.addEventListener('keydown',updateArmed);
+window.addEventListener('keyup',updateArmed);
+// Fenster verlassen → Schutz wieder scharf (sonst bliebe er "entsperrt" hängen)
+window.addEventListener('blur',()=>document.body.classList.remove('del-armed'));
+document.addEventListener('click',e=>{
+  const b=e.target.closest('#delGuardPick button'); if(b) setDeleteGuard(b.dataset.k);
+});
+
 // Frontend-Karten-x: stoppt Event-Bubbling, dann echtes Löschen
-function removeProgram2(event,id){ event.stopPropagation(); removeProgram(id); }
+function removeProgram2(event,id){
+  event.stopPropagation();
+  // Sicherheitsnetz zusätzlich zum CSS: ohne gehaltene Taste wird nicht gelöscht.
+  if(deleteGuardKey!=='off' && !guardHeld(event)) return;
+  removeProgram(id);
+}
 async function rescanPrograms(){
   const btn=document.querySelector('.btn-rescan'); if(btn) btn.textContent=I18N.t('programs.rescanning');
   try{
@@ -424,6 +456,7 @@ function addProgramManually(){
 
 // ── Bundles ──
 function renderBundleList(){
+  refreshTrayMenu();   // Tray-Menü spiegelt die Bundles (Anlegen/Löschen/Sprachwechsel)
   const list=document.getElementById('bundleList'); if(!list) return; list.innerHTML='';
   if(!bundles.length){list.innerHTML=`<div style="font-size:10px;color:rgba(var(--ui-text-rgb),0.4);text-align:center;padding:6px;letter-spacing:1px">${I18N.t('bundles.none')}</div>`;return;}
   bundles.forEach((b,i)=>{
@@ -686,7 +719,7 @@ function captureKey(e){
 // ── Speichern / Laden ──
 async function saveAll(){
   const customProgs=ALL_PROGRAMS.filter(p=>!['claude','codex','antigravity'].includes(p.id));
-  const s={alwaysOnTop,autoSize,sizeId:currentSizeId,zoom:currentZoom,hiddenCards:[...hiddenCards],bundles,appColors,bundleColors,autostartEnabled,autostartDays,customPrograms:customProgs,onboardingDone:true,onboardingAlways,layoutMode,gridCols,orbitCount,orbitSizes,orbitSpeeds,scKey,lastActivePrograms,globalDelay,profiles,themeMode,accentColor,customAccents,deletedBasePrograms,programOrder:ALL_PROGRAMS.map(p=>p.id),languageMode};
+  const s={alwaysOnTop,autoSize,sizeId:currentSizeId,zoom:currentZoom,hiddenCards:[...hiddenCards],bundles,appColors,bundleColors,autostartEnabled,autostartDays,customPrograms:customProgs,onboardingDone:true,onboardingAlways,deleteGuardKey,layoutMode,gridCols,orbitCount,orbitSizes,orbitSpeeds,scKey,lastActivePrograms,globalDelay,profiles,themeMode,accentColor,customAccents,deletedBasePrograms,programOrder:ALL_PROGRAMS.map(p=>p.id),languageMode};
   try{
     await invoke('save_settings',{settings:JSON.stringify(s)});
     try{await invoke('set_autostart',{enable:autostartEnabled,days:autostartDays});}catch(e){}
@@ -723,6 +756,8 @@ async function loadSettings(){
     // Fehlt das Feld (alte Einstellungsdatei), gilt der Standard: AN.
     onboardingAlways = s.onboardingAlways!==undefined ? !!s.onboardingAlways : true;
     document.getElementById('toggle-onboarding')?.classList.toggle('active',onboardingAlways);
+    if(['ctrl','shift','alt','off'].includes(s.deleteGuardKey)) deleteGuardKey=s.deleteGuardKey;
+    applyDeleteGuard();
     if(s.layoutMode){layoutMode=s.layoutMode;document.getElementById('layout-'+layoutMode)?.classList.add('active');document.getElementById('layout-'+(layoutMode==='pyramid'?'grid':'pyramid'))?.classList.remove('active');if(layoutMode==='grid') document.getElementById('gridColsSetting').style.display='block';}
     if(s.gridCols){gridCols=s.gridCols;[3,4,5,6,7].forEach(i=>document.getElementById('cols-'+i)?.classList.toggle('active',i===gridCols));}
     if(s.orbitCount){orbitCount=s.orbitCount;[1,2,3].forEach(i=>document.getElementById('orb-'+i)?.classList.toggle('active',i===orbitCount));document.getElementById('orbSizeRow1').style.display=orbitCount>=2?'flex':'none';document.getElementById('orbSizeRow2').style.display=orbitCount>=3?'flex':'none';document.getElementById('orbSpeedRow1').style.display=orbitCount>=2?'flex':'none';document.getElementById('orbSpeedRow2').style.display=orbitCount>=3?'flex':'none';}
@@ -846,10 +881,49 @@ function startNetWatcher(){
   window.addEventListener('offline',updateNetStatus);
 }
 
+// ── Tray-Menü (Rechtsklick auf das Taskleisten-Symbol) ──
+// Rust baut das Menü, kennt aber weder Programme noch Startverzögerung —
+// die Aktionen führt deshalb das Frontend aus. Das Fenster bleibt dabei zu.
+let _trayTimer=null;
+function refreshTrayMenu(){ clearTimeout(_trayTimer); _trayTimer=setTimeout(doRefreshTrayMenu,150); }
+async function doRefreshTrayMenu(){
+  try{
+    await invoke('update_tray_menu',{
+      bundles: bundles.map(b=>b.name),
+      labels:{
+        start:    I18N.t('tray.start'),    close:    I18N.t('tray.close'),
+        startAll: I18N.t('tray.startAll'), closeAll: I18N.t('tray.closeAll'),
+        show:     I18N.t('tray.show'),     quit:     I18N.t('tray.quit')
+      }
+    });
+  }catch(e){ console.error('Tray-Menü:',e); }
+}
+function handleTrayAction(action){
+  if(action==='start:all'){
+    if(activeBundleIdx>=0) deactivateBundle();
+    document.querySelectorAll('.ki-card:not(.hidden)').forEach(c=>c.classList.add('selected'));
+    updateDots(); checkStartButton(); updateStartBtn();
+    startSequence(); return;
+  }
+  if(action==='close:all'){ closeAll(); return; }
+  const m=/^(start|close):(\d+)$/.exec(action||''); if(!m) return;
+  const idx=+m[2], b=bundles[idx]; if(!b) return;
+  if(m[1]==='close'){ closeApps(b.programs); return; }
+  if(activeBundleIdx!==idx) selectBundle(idx);
+  bundleReady=true; startSequence();
+}
+(function(){
+  const ev=window.__TAURI__ && window.__TAURI__.event;
+  if(!ev || !ev.listen) return;            // im Browser-Test nicht vorhanden
+  ev.listen('tray-action', e=>handleTrayAction(e && e.payload));
+})();
+
 // ── Init ──
 applyTheme();        // System-Theme sofort anwenden (vor Settings-Load)
 I18N.setLang(I18N.detectLang()); // Sprache sofort anwenden, loadSettings überschreibt ggf. mit gespeicherter Wahl
 renderAccentSlots();
+applyDeleteGuard();  // Schutz sofort scharf, bevor die Einstellungen geladen sind
 loadSettings();
 startProfileWatcher();
 startNetWatcher();
+refreshTrayMenu();   // Tray-Beschriftungen in der aktiven Sprache setzen

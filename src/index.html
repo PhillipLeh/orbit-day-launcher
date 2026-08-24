@@ -332,6 +332,19 @@
         </div>
         <button class="btn-save" style="margin-top:12px" onclick="saveProfile()" data-i18n="profiles.save">Profil speichern</button>
       </div>
+
+      <!-- Löschschutz für die Programmkarten im Frontend -->
+      <div class="setting-group" style="margin-top:14px;border-bottom:none">
+        <div class="setting-label" data-i18n="settings.deleteGuard">Löschschutz</div>
+        <div class="setting-hint" data-i18n="settings.deleteGuardHint">Programmkarten lassen sich nur löschen, solange du diese Taste gedrückt hältst. Die Löschen-Knöpfe werden dann rot und wackeln.</div>
+        <div class="prio-pick" id="delGuardPick" style="margin-top:6px">
+          <button data-k="ctrl" class="active">Strg</button>
+          <button data-k="shift">Shift</button>
+          <button data-k="alt">Alt</button>
+          <button data-k="off" data-i18n="settings.deleteGuardOff">Aus</button>
+        </div>
+      </div>
+
       <button class="btn-save" style="margin-top:8px" onclick="saveAll()" data-i18n="common.saveSettings">Einstellungen speichern</button>
     </div>
   </div>
