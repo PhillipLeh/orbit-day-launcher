@@ -14,6 +14,25 @@ fn dirs_home() -> Option<std::path::PathBuf> {
     std::env::var("USERPROFILE").ok().map(std::path::PathBuf::from)
 }
 
+// ── Eingabepruefung ───────────────────────────────────────────────────────────
+// Werte aus der settings.json sind fuer uns nur "vom Nutzer gepflegte Daten" —
+// sie duerfen NICHT als Muster oder Metazeichen wirken. Ein "*" in einem
+// Paketnamen wuerde sonst z.B. im PowerShell -like-Muster auf fremde Prozesse
+// passen und diese mit beenden. Deshalb an jeder Uebergabestelle pruefen.
+fn ist_harmloser_name(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 128
+        && s.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | '+' | ' '))
+}
+
+// AUMID = "<PaketFamilie>!<AppId>" — bewusst enger Zeichensatz.
+fn ist_gueltige_aumid(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 256
+        && s.matches('!').count() == 1
+        && s.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | '!' | '+'))
+}
+
 // Windows-Ballast, der über Get-StartApps auftaucht, aber keine echte App ist.
 // Match über den Paket-Namensteil (vor dem '_') → sprach- und versionsunabhängig.
 const BLOCKED_PACKAGES: &[&str] = &[
@@ -176,14 +195,22 @@ fn launch_app(app: tauri::AppHandle, app_id: String, app_type: String, path: Str
         app.opener().open_url(path.as_str(), None::<&str>).map_err(|e| e.to_string())?;
     } else if app_type == "store" && app_id.contains('!') {
         // Echte Store-App mit AUMID
+        if !ist_gueltige_aumid(&app_id) { return Err("Ungültige App-ID".into()); }
         Command::new("explorer.exe").arg(format!("shell:AppsFolder\\{}", app_id)).spawn().map_err(|e| e.to_string())?;
     } else {
-        // .exe, .lnk, .url-Datei: alle über die Shell starten.
-        // cmd /C start "" "<pfad>" verhält sich wie ein Doppelklick im Explorer:
-        // löst Verknüpfungen samt Argumenten auf, respektiert UAC (MSI Afterburner),
-        // setzt korrekten App-Kontext (Electron/Discord). Pfad als separates Argument
-        // → korrektes Quoting bei Leerzeichen.
-        Command::new("cmd").args(["/C", "start", "", &path]).spawn().map_err(|e| format!("Start fehlgeschlagen: {}", e))?;
+        // .exe, .lnk, .url-Datei über den Explorer starten — verhält sich wie ein
+        // Doppelklick (löst Verknüpfungen samt Argumenten auf, respektiert UAC,
+        // setzt korrekten App-Kontext), aber OHNE Umweg über cmd.exe.
+        //
+        // SICHERHEIT: Vorher lief das über `cmd /C start "" "<pfad>"` — ein
+        // Command-Injection-Vektor. cmd.exe zerlegt seine Kommandozeile nach eigenen
+        // Regeln, unter denen & | ^ < > auch in Anführungszeichen wirken können;
+        // Rusts Argument-Quoting folgt diesen Regeln ausdrücklich nicht (siehe
+        // std::process::Command-Doku). Ein präparierter Pfad in der settings.json
+        // hätte so beliebige Befehle ausführen können. explorer.exe ist keine Shell:
+        // der Pfad kommt als ein Argument an und Metazeichen bleiben wirkungslos.
+        Command::new("explorer.exe").arg(&path).spawn()
+            .map_err(|e| format!("Start fehlgeschlagen: {}", e))?;
     }
     Ok(())
 }
@@ -221,7 +248,10 @@ fn close_app(app_id: String, app_type: String, path: String) -> Result<(), Strin
         // = "<Name>_<PublisherHash>"; der WindowsApps-Ordner beginnt mit <Name>.
         let package = app_id.split('!').next().unwrap_or(&app_id);
         let name_part = package.split('_').next().unwrap_or(package);
-        // Single Quotes im Paketnamen entschärfen (PowerShell-String-Sicherheit).
+        // SICHERHEIT: Nur unauffällige Namen zulassen. Ein "*" oder "?" wäre im
+        // -like-Muster unten ein Platzhalter und würde fremde Prozesse mit beenden.
+        if !ist_harmloser_name(name_part) { return Err("Ungültiger Paketname".into()); }
+        // Single Quotes zusätzlich entschärfen (PowerShell-String-Sicherheit).
         let safe = name_part.replace('\'', "''");
         // Get-CimInstance liefert ExecutablePath zuverlässiger als Get-Process.Path
         // (auch für Prozesse, deren .Path im WebView-Kontext null wäre).
@@ -243,6 +273,8 @@ fn close_app(app_id: String, app_type: String, path: String) -> Result<(), Strin
             .file_name()
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_else(|| app_id.clone());
+        // Gleicher Gedanke wie oben: keine Platzhalter an taskkill durchreichen.
+        if !ist_harmloser_name(&exe_name) { return Err("Ungültiger Prozessname".into()); }
         Command::new("taskkill")
             .args(["/IM", &exe_name, "/F"])
             .spawn().map_err(|e| e.to_string())?;
@@ -309,8 +341,16 @@ fn set_autostart(enable: bool, days: Vec<String>) -> Result<(), String> {
     let hkcu = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
     let key = hkcu.open_subkey_with_flags("Software\\Microsoft\\Windows\\CurrentVersion\\Run", winreg::enums::KEY_SET_VALUE | winreg::enums::KEY_QUERY_VALUE).map_err(|e| e.to_string())?;
     if enable {
+        // SICHERHEIT: `days` kommt aus dem Frontend und landet in einem
+        // Autostart-Eintrag der Registry. Nur die bekannten Wochentagskürzel
+        // zulassen — sonst könnte beliebiger Text in die Startzeile geraten.
+        const TAGE: &[&str] = &["Mo","Di","Mi","Do","Fr","Sa","So"];
+        let gefiltert: Vec<&str> = days.iter()
+            .filter(|d| TAGE.contains(&d.as_str()))
+            .map(|d| d.as_str())
+            .collect();
         let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-        key.set_value("OrbitDayLauncher", &format!("\"{}\" --autostart --days={}", exe.display(), days.join(","))).map_err(|e| e.to_string())?;
+        key.set_value("OrbitDayLauncher", &format!("\"{}\" --autostart --days={}", exe.display(), gefiltert.join(","))).map_err(|e| e.to_string())?;
     } else {
         let _ = key.delete_value("OrbitDayLauncher");
     }
