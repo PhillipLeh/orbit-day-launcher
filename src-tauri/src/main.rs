@@ -2,7 +2,7 @@
 use std::process::Command;
 use std::fs;
 use tauri::{Manager, Emitter, menu::{MenuBuilder, SubmenuBuilder}, tray::TrayIconBuilder};
-use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_opener::OpenerExt;
 
 #[derive(serde::Serialize, Clone)]
@@ -346,7 +346,11 @@ fn set_shortcut(app: tauri::AppHandle, ctrl: bool, shift: bool, alt: bool, key: 
         _ => Code::Space,
     };
     let shortcut = Shortcut::new(if mods.is_empty() { None } else { Some(mods) }, code);
-    app.global_shortcut().on_shortcut(shortcut, |app, _s, _e| {
+    app.global_shortcut().on_shortcut(shortcut, |app, _s, event| {
+        // WICHTIG: Der Handler feuert fuer Druck UND Loslassen. Ohne diese Pruefung
+        // wird das Fenster zweimal umgeschaltet (ein + wieder aus) und es sieht so
+        // aus, als wuerde der Hotkey gar nicht funktionieren.
+        if event.state() != ShortcutState::Pressed { return; }
         if let Some(w) = app.get_webview_window("main") {
             if w.is_visible().unwrap_or(false) { let _ = w.hide(); }
             else { let _ = w.show(); let _ = w.set_focus(); }
@@ -356,7 +360,8 @@ fn set_shortcut(app: tauri::AppHandle, ctrl: bool, shift: bool, alt: bool, key: 
 
 fn register_default_shortcut(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyO);
-    app.global_shortcut().on_shortcut(shortcut, |app, _s, _e| {
+    app.global_shortcut().on_shortcut(shortcut, |app, _s, event| {
+        if event.state() != ShortcutState::Pressed { return; }   // sonst doppeltes Umschalten
         if let Some(w) = app.get_webview_window("main") {
             if w.is_visible().unwrap_or(false) { let _ = w.hide(); }
             else { let _ = w.show(); let _ = w.set_focus(); }

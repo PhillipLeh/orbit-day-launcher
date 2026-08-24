@@ -129,8 +129,8 @@
     </div>
     <div class="app-list" id="appList"></div>
 
-    <button class="btn-go"   id="btnGo"   onclick="finish()" data-i18n="onboarding.go">LOS GEHT'S</button>
-    <div    class="btn-skip" id="btnSkip" onclick="finish()" data-i18n="onboarding.skip">Überspringen – später hinzufügen</div>
+    <button class="btn-go"   id="btnGo"   onclick="finish(true)"  data-i18n="onboarding.go">LOS GEHT'S</button>
+    <div    class="btn-skip" id="btnSkip" onclick="finish(false)" data-i18n="onboarding.skip">Überspringen – später hinzufügen</div>
   </div>
 
   <script src="i18n.js"></script>
@@ -248,8 +248,13 @@
       document.getElementById('btnSkip').style.display = 'block';
     }
 
-    async function finish() {
-      const selected = [...document.querySelectorAll('.app-item.selected')]
+    // uebernehmen=true  → ausgewaehlte Programme werden uebernommen ("Los geht's")
+    // uebernehmen=false → nichts uebernehmen ("Ueberspringen"). Vorher riefen beide
+    //   Knoepfe dieselbe Funktion auf, wodurch "Ueberspringen" alle vorausgewaehlten
+    //   Programme trotzdem hinzufuegte — entgegen seiner Beschriftung.
+    async function finish(uebernehmen) {
+      const selected = uebernehmen === false ? [] :
+        [...document.querySelectorAll('.app-item.selected')]
         .map(el => detected.find(a => a.id === el.dataset.id)).filter(Boolean);
       // Bestehende Einstellungen einlesen und nur ergänzen — früher wurde die
       // komplette settings.json mit diesen drei Feldern überschrieben.
