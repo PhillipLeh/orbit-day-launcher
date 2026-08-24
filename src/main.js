@@ -19,7 +19,7 @@ let customAccents=[null,null]; // zwei speicherbare Custom-Akzent-Slots
 let editingSlot=-1;
 let dragSrcId=null, suppressNextClick=false;
 let autostartEnabled=false, autostartDays=['Mo','Di','Mi','Do','Fr'];
-let onboardingAlways=false; // true = Setup-Assistent bei JEDEM Start zeigen (sonst nur beim ersten)
+let onboardingAlways=true; // Standard AN: Setup-Assistent bei jedem Start; ausschaltbar in den Einstellungen
 let editingBundleIdx=-1, layoutMode='pyramid', gridCols=4;
 let orbitCount=2, orbitSizes=[90,140,200], orbitSpeeds=[3,2,1];
 let scKey='O'; // Strg+Alt sind fest, nur dritte Taste frei
@@ -720,7 +720,9 @@ async function loadSettings(){
     if(s.bundles){bundles=s.bundles;renderBundleList();renderBundleQuick();}
     if(s.autostartEnabled!==undefined){autostartEnabled=s.autostartEnabled;document.getElementById('toggle-autostart').classList.toggle('active',autostartEnabled);}
     if(s.autostartDays){autostartDays=s.autostartDays;document.querySelectorAll('.day-btn').forEach(btn=>btn.classList.toggle('active',autostartDays.includes(btn.dataset.day)));}
-    if(s.onboardingAlways!==undefined){onboardingAlways=!!s.onboardingAlways;document.getElementById('toggle-onboarding')?.classList.toggle('active',onboardingAlways);}
+    // Fehlt das Feld (alte Einstellungsdatei), gilt der Standard: AN.
+    onboardingAlways = s.onboardingAlways!==undefined ? !!s.onboardingAlways : true;
+    document.getElementById('toggle-onboarding')?.classList.toggle('active',onboardingAlways);
     if(s.layoutMode){layoutMode=s.layoutMode;document.getElementById('layout-'+layoutMode)?.classList.add('active');document.getElementById('layout-'+(layoutMode==='pyramid'?'grid':'pyramid'))?.classList.remove('active');if(layoutMode==='grid') document.getElementById('gridColsSetting').style.display='block';}
     if(s.gridCols){gridCols=s.gridCols;[3,4,5,6,7].forEach(i=>document.getElementById('cols-'+i)?.classList.toggle('active',i===gridCols));}
     if(s.orbitCount){orbitCount=s.orbitCount;[1,2,3].forEach(i=>document.getElementById('orb-'+i)?.classList.toggle('active',i===orbitCount));document.getElementById('orbSizeRow1').style.display=orbitCount>=2?'flex':'none';document.getElementById('orbSizeRow2').style.display=orbitCount>=3?'flex':'none';document.getElementById('orbSpeedRow1').style.display=orbitCount>=2?'flex':'none';document.getElementById('orbSpeedRow2').style.display=orbitCount>=3?'flex':'none';}

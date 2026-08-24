@@ -37,9 +37,9 @@ once — and Orbit Day Launcher takes care of the rest.
   countdown you can cancel).
 - **Automatic program detection** — finds installed Store/UWP apps, categorizes them
   (AI, Browser, Development, Communication, …) and filters out Windows system clutter.
-  Runs once in the setup wizard on first launch, and any time you ask for it later.
-  You can also switch it back on for every start (see
-  [First run & finding your programs](#first-run--finding-your-programs)).
+  Runs in the setup wizard on every start (can be switched off) and any time you ask for
+  it via **Rescan** — see
+  [First run & finding your programs](#first-run--finding-your-programs).
 - **Multi-language UI** — German, English, Spanish, Hindi, and French, switchable anytime.
 - **Fully customizable** — Light/Dark/System theme, custom accent color, layout
   (pyramid/grid), window size, and your own keyboard shortcut to show/hide the window
@@ -48,23 +48,20 @@ once — and Orbit Day Launcher takes care of the rest.
 
 ## First run & finding your programs
 
-The **first time** you start Orbit Day Launcher, a setup wizard opens and scans your PC
-for installed programs. Found apps are grouped by category — tick the ones you want and
-click **Let's go**, or skip the step and add programs later.
+When you start Orbit Day Launcher, a setup wizard opens and scans your PC for installed
+programs. Found apps are grouped by category — tick the ones you want and click
+**Let's go**, or skip the step and add programs later.
 
-After that the wizard stays out of your way: on every following start you land directly
-in the launcher.
-
-You can always find programs again — in two ways:
+By default this wizard runs on **every** start, so newly installed software always gets
+picked up. If you'd rather go straight to the launcher, turn it off:
 
 | What you want | Where |
 |---|---|
-| Search once, right now | **Settings → Programs → ↻ Rescan** — opens the same picker with everything newly found |
-| Run the wizard on **every** start | **Settings → Programs → "Show setup wizard on every start"** |
+| Skip the wizard from now on | **Settings → Programs → "Show setup wizard on every start"** → off |
+| Search once, on demand | **Settings → Programs → ↻ Rescan** — opens the same picker with everything newly found |
 
-The toggle is off by default. Turning it on is useful if you install new software often
-and want the scan to greet you each time — or if you simply like the wizard. Turning it
-off again puts things back to normal.
+With the toggle off, the wizard only ever appears on the very first start after
+installation. You can switch it back on at any time.
 
 Programs that aren't detected automatically can be added by hand under
 **Settings → Programs → Add manually** — either a path to an `.exe`/shortcut, or a web

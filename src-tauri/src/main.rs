@@ -394,8 +394,10 @@ fn main() {
             // Nutzer-Schalter aus den Einstellungen: Assistent bewusst bei JEDEM
             // Start zeigen (z.B. zum Prüfen der Programmsuche). Überstimmt das
             // "schon gesehen"-Flag.
+            // Standard AN: fehlt das Feld, laeuft die Programmsuche bei jedem Start.
+            // Ausschaltbar in den Einstellungen (Reiter Programme).
             let onboarding_always = settings_val.as_ref()
-                .and_then(|v| v["onboardingAlways"].as_bool()).unwrap_or(false);
+                .and_then(|v| v["onboardingAlways"].as_bool()).unwrap_or(true);
 
             if onboarding_done && !onboarding_always {
                 if let Some(w) = app.get_webview_window("main") { let _ = w.show(); }
