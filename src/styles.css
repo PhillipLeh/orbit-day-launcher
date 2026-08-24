@@ -127,6 +127,15 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .lnk{font-size:10px;letter-spacing:2px;color:rgba(var(--ui-text-rgb),0.3);cursor:pointer;transition:color 0.2s}
 .lnk:hover{color:rgb(var(--ui-text-rgb))}
 .bundle-creator{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid rgba(var(--accent-rgb),0.1);border-radius:6px;background:rgba(0,0,0,0.15);margin-bottom:8px}
+/* Die aufgeklappte Liste eines <select> zeichnet Windows selbst — mit hellem
+   Hintergrund. Die Akzentfarbe (hellblau) waere darauf kaum lesbar, deshalb
+   dort bewusst schwarz auf weiss. Das zugeklappte Feld behaelt das App-Design. */
+select.bundle-input option{color:#111;background:#fff}
+/* Kurze Rueckmeldung beim Bundle-Speichern (fehlender Name / kein Programm) */
+.save-hint{margin-top:7px;font-size:10px;letter-spacing:0.5px;line-height:1.4;
+  color:rgb(var(--danger-rgb));opacity:0;transition:opacity .25s;min-height:13px}
+.save-hint.show{opacity:1}
+.save-hint.ok{color:var(--ok,#39d98a)}
 .bundle-input{background:rgba(var(--accent-rgb),0.05);border:1px solid rgba(var(--accent-rgb),0.2);color:rgb(var(--ui-text-rgb));font-family:'Segoe UI',Arial,sans-serif;font-size:11px;letter-spacing:1px;padding:8px 10px;border-radius:4px;outline:none;transition:border-color 0.2s;width:100%}
 .bundle-input:focus{border-color:rgb(var(--accent-rgb))}
 .bundle-input::placeholder{color:rgba(var(--ui-text-rgb),0.2)}

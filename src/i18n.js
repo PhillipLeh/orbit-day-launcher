@@ -37,6 +37,11 @@ const DICT = {
 
   'settings.alwaysOnTop': { de: 'Immer im Vordergrund', en: 'Always on Top', es: 'Siempre visible', hi: 'हमेशा सबसे ऊपर', fr: 'Toujours au premier plan' },
   'settings.autostartWindows': { de: 'Autostart mit Windows', en: 'Start with Windows', es: 'Iniciar con Windows', hi: 'Windows के साथ शुरू करें', fr: 'Démarrer avec Windows' },
+  // Rueckmeldungen beim Bundle-Anlegen
+  'bundles.needName':     { de: 'Bitte zuerst einen Namen eingeben.', en: 'Please enter a name first.', es: 'Introduce primero un nombre.', hi: 'कृपया पहले एक नाम दर्ज करें।', fr: 'Saisis d\'abord un nom.' },
+  'bundles.needPrograms': { de: 'Bitte mindestens ein Programm anklicken.', en: 'Please select at least one program.', es: 'Selecciona al menos un programa.', hi: 'कृपया कम से कम एक प्रोग्राम चुनें।', fr: 'Sélectionne au moins un programme.' },
+  'bundles.nameTaken':    { de: 'Dieser Name ist schon vergeben.', en: 'That name is already taken.', es: 'Ese nombre ya existe.', hi: 'यह नाम पहले से मौजूद है।', fr: 'Ce nom existe déjà.' },
+  'bundles.created':      { de: '„{name}" wurde angelegt.', en: '"{name}" was created.', es: '«{name}» se ha creado.', hi: '„{name}" बनाया गया।', fr: '« {name} » a été créé.' },
   // Tray-Menue (Rechtsklick auf das Taskleisten-Symbol)
   'tray.start':    { de: 'Starten', en: 'Start', es: 'Iniciar', hi: 'शुरू करें', fr: 'Démarrer' },
   'tray.close':    { de: 'Schließen', en: 'Close', es: 'Cerrar', hi: 'बंद करें', fr: 'Fermer' },

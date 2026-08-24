@@ -513,7 +513,20 @@ let bundleOrder=[];
 function showBundleCreator(){ bundleOrder=[]; document.getElementById('bundleNameInput').value=''; const d=document.getElementById('bundleCreateDelay'); if(d){ d.value=0; document.getElementById('bundleCreateDelayVal').textContent='0.0s'; } renderBundleProgSelect(); }
 function renderBundleProgSelect(){ const c=document.getElementById('bundleProgramSelect'); if(!c) return; c.innerHTML=''; ALL_PROGRAMS.forEach(p=>{ const el=document.createElement('div'); el.className='bundle-prog-item'; el.dataset.id=p.id; el.innerHTML=`<div class="bundle-prog-dot" style="background:${esc(getColor(p.id))}"></div><span></span><div class="bundle-order-num"></div>`; el.querySelector('span').textContent=p.name; el.onclick=()=>toggleBundleProgram(el,p.id); c.appendChild(el); }); }
 function toggleBundleProgram(el,id){ if(el.classList.contains('selected')){el.classList.remove('selected');bundleOrder=bundleOrder.filter(x=>x!==id);}else{el.classList.add('selected');bundleOrder.push(id);} document.querySelectorAll('#bundleProgramSelect .bundle-prog-item').forEach(item=>{ const num=item.querySelector('.bundle-order-num'); if(!num) return; const idx=bundleOrder.indexOf(item.dataset.id); num.textContent=idx>=0?idx+1:''; }); }
-function saveBundle(){ const name=document.getElementById('bundleNameInput').value.trim(); if(!name||!bundleOrder.length) return; const delay=parseInt(document.getElementById('bundleCreateDelay').value)||0; bundles.push({name,programs:[...bundleOrder],delay}); bundleOrder=[]; document.getElementById('bundleNameInput').value=''; const d=document.getElementById('bundleCreateDelay'); if(d){ d.value=0; document.getElementById('bundleCreateDelayVal').textContent='0.0s'; } renderBundleProgSelect(); renderBundleList(); renderBundleQuick(); renderProfileBundleOptions(); markDirty(); }
+// Kurze Rückmeldung unter dem Speichern-Knopf. Vorher brach saveBundle() stumm ab,
+// wenn Name oder Programmauswahl fehlten — das wirkte wie ein kaputter Knopf.
+function bundleHint(msg, ok){
+  const el=document.getElementById('bundleSaveHint'); if(!el) return;
+  el.textContent=msg; el.classList.toggle('ok',!!ok); el.classList.add('show');
+  clearTimeout(bundleHint._t); bundleHint._t=setTimeout(()=>el.classList.remove('show'),3200);
+}
+function saveBundle(){ const name=document.getElementById('bundleNameInput').value.trim();
+  if(!name){ bundleHint(I18N.t('bundles.needName')); document.getElementById('bundleNameInput').focus(); return; }
+  if(!bundleOrder.length){ bundleHint(I18N.t('bundles.needPrograms')); return; }
+  // Namen müssen eindeutig sein: Bundle-Farben und Profile referenzieren sie.
+  if(bundles.some(b=>b.name.toLowerCase()===name.toLowerCase())){ bundleHint(I18N.t('bundles.nameTaken')); return; }
+  const delay=parseInt(document.getElementById('bundleCreateDelay').value)||0; bundles.push({name,programs:[...bundleOrder],delay}); bundleOrder=[]; document.getElementById('bundleNameInput').value=''; const d=document.getElementById('bundleCreateDelay'); if(d){ d.value=0; document.getElementById('bundleCreateDelayVal').textContent='0.0s'; } renderBundleProgSelect(); renderBundleList(); renderBundleQuick(); renderProfileBundleOptions(); markDirty();
+  bundleHint(I18N.t('bundles.created',{name}), true); }
 
 // ── Profile (Auto-Switch) ──
 function renderProfileBundleOptions(){

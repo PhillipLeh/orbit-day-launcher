@@ -336,6 +336,13 @@ fn set_shortcut(app: tauri::AppHandle, ctrl: bool, shift: bool, alt: bool, key: 
         "q"=>Code::KeyQ,"r"=>Code::KeyR,"s"=>Code::KeyS,"t"=>Code::KeyT,
         "u"=>Code::KeyU,"v"=>Code::KeyV,"w"=>Code::KeyW,"x"=>Code::KeyX,
         "y"=>Code::KeyY,"z"=>Code::KeyZ,
+        // Ziffern: die Tastenbelegung im Frontend laesst 1–9 zu (Digit* und Numpad*).
+        // Fehlten sie hier, landete die Auswahl still bei Space — der Hotkey war
+        // dann ein anderer als angezeigt.
+        "1"=>Code::Digit1,"2"=>Code::Digit2,"3"=>Code::Digit3,"4"=>Code::Digit4,
+        "5"=>Code::Digit5,"6"=>Code::Digit6,"7"=>Code::Digit7,"8"=>Code::Digit8,
+        "9"=>Code::Digit9,
+        "enter"=>Code::Enter,   // Altbestand aus frueheren Einstellungsdateien
         _ => Code::Space,
     };
     let shortcut = Shortcut::new(if mods.is_empty() { None } else { Some(mods) }, code);
