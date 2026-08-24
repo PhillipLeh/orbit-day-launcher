@@ -135,15 +135,6 @@
         </div>
       </div>
 
-      <!-- Setup-Assistent (Onboarding) bei jedem Start zeigen -->
-      <div class="setting-group">
-        <label class="toggle-row">
-          <span data-i18n="settings.onboardingAlways">Setup-Assistent bei jedem Start</span>
-          <div class="toggle" id="toggle-onboarding" onclick="toggleOnboardingAlways()"><div class="toggle-knob"></div></div>
-        </label>
-        <div class="setting-hint" data-i18n="settings.onboardingHint">Normalerweise erscheint die Programmsuche nur beim allerersten Start. Aktiviere dies, um sie bei jedem Start zu sehen.</div>
-      </div>
-
       <!-- Orbit-Einstellungen -->
       <div class="setting-group">
         <div class="setting-label" data-i18n="settings.orbitCount">Orbit-Anzahl</div>
@@ -255,6 +246,16 @@
         </div>
         <button class="btn-save" onclick="addProgramManually()" data-i18n="programs.add">+ Hinzufügen</button>
       </div>
+
+      <!-- Setup-Assistent (Programmsuche beim Start) -->
+      <div class="setting-group" style="margin-top:14px;border-bottom:none">
+        <label class="toggle-row">
+          <span data-i18n="settings.onboardingAlways">Setup-Assistent bei jedem Start</span>
+          <div class="toggle" id="toggle-onboarding" onclick="toggleOnboardingAlways()"><div class="toggle-knob"></div></div>
+        </label>
+        <div class="setting-hint" data-i18n="settings.onboardingHint">Normalerweise erscheint die Programmsuche nur beim allerersten Start. Aktiviere dies, um sie bei jedem Start zu sehen.</div>
+      </div>
+
       <button class="btn-save" style="margin-top:8px" onclick="saveAll()" data-i18n="common.saveSettings">Einstellungen speichern</button>
     </div>
 
