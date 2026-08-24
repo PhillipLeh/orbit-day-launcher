@@ -73,6 +73,16 @@
 
     .none-msg{font-size:11px;color:rgba(0,229,255,0.25);letter-spacing:1px;margin-bottom:16px;display:none}
 
+    /* Bereits eingerichtete Programme: gedaempft, damit die neuen hervorstechen */
+    .app-item.known{opacity:0.45}
+    .app-item.known .a-tag{color:rgba(0,229,255,0.45);letter-spacing:0.5px}
+    .app-item.known.selected{opacity:0.75}
+
+    /* Rueckmeldung nach "Los geht's" */
+    .finish-msg{flex-shrink:0;min-height:16px;margin-bottom:8px;font-size:11px;
+      letter-spacing:1px;color:#39d98a;opacity:0;transition:opacity .3s}
+    .finish-msg.show{opacity:1}
+
     .btn-go{background:transparent;border:1px solid #00e5ff;color:#00e5ff;font-family:'Segoe UI',Arial,sans-serif;font-size:11px;letter-spacing:5px;padding:12px 48px;cursor:pointer;border-radius:4px;transition:all 0.25s;text-transform:uppercase;display:none}
     .btn-go:hover{background:rgba(0,229,255,0.1);box-shadow:0 0 18px rgba(0,229,255,0.3)}
     .btn-skip{font-size:10px;letter-spacing:2px;color:rgba(0,229,255,0.2);cursor:pointer;margin-top:10px;transition:color 0.2s;display:none}
@@ -129,6 +139,7 @@
     </div>
     <div class="app-list" id="appList"></div>
 
+    <div class="finish-msg" id="finishMsg"></div>
     <button class="btn-go"   id="btnGo"   onclick="finish(true)"  data-i18n="onboarding.go">LOS GEHT'S</button>
     <div    class="btn-skip" id="btnSkip" onclick="finish(false)" data-i18n="onboarding.skip">Überspringen – später hinzufügen</div>
   </div>
@@ -182,7 +193,22 @@
     }
 
 
+    // Bereits eingerichtete Programme ermitteln — sie sollen nicht doppelt
+    // hinzugefuegt werden und werden in der Liste als "vorhanden" markiert.
+    let vorhandeneIds = new Set();
+    async function ladeVorhandene() {
+      try {
+        const s = JSON.parse(await invoke('load_settings') || '{}') || {};
+        const ids = new Set();
+        (s.customPrograms || []).forEach(p => { if (p && p.id) ids.add(p.id); });
+        const geloescht = new Set(s.deletedBasePrograms || []);
+        ['claude','codex','antigravity'].forEach(id => { if (!geloescht.has(id)) ids.add(id); });
+        vorhandeneIds = ids;
+      } catch(_) { vorhandeneIds = new Set(); }
+    }
+
     async function scan() {
+      await ladeVorhandene();
       try {
         detected = await invoke('detect_installed_apps');
         const total = Math.min(detected.length, 10);
@@ -223,11 +249,13 @@
         list.appendChild(lbl);
         apps.forEach(app => {
           const color = CAT_COLORS[cat] || '#00e5ff';
+          const schonDa = vorhandeneIds.has(app.id);
           const el = document.createElement('div');
-          el.className = 'app-item selected'; el.dataset.id = app.id;
+          // Bewusst NICHTS vorausgewaehlt: der Nutzer hakt an, was er wirklich will.
+          el.className = 'app-item' + (schonDa ? ' known' : ''); el.dataset.id = app.id;
           el.innerHTML = `<div class="a-dot" style="background:${color}"></div>
             <div class="a-name"></div>
-            <div class="a-tag">${app.app_type==='store'?I18N.t('common.store'):'.exe'}</div>
+            <div class="a-tag">${schonDa ? I18N.t('onboarding.known') : (app.app_type==='store'?I18N.t('common.store'):'.exe')}</div>
             <div class="a-check">✓</div>`;
           el.querySelector('.a-name').textContent = app.name;
           el.onclick = () => el.classList.toggle('selected');
@@ -253,9 +281,25 @@
     //   Knoepfe dieselbe Funktion auf, wodurch "Ueberspringen" alle vorausgewaehlten
     //   Programme trotzdem hinzufuegte — entgegen seiner Beschriftung.
     async function finish(uebernehmen) {
-      const selected = uebernehmen === false ? [] :
+      const gewaehlt = uebernehmen === false ? [] :
         [...document.querySelectorAll('.app-item.selected')]
         .map(el => detected.find(a => a.id === el.dataset.id)).filter(Boolean);
+      // Schon eingerichtete Programme nicht erneut uebernehmen.
+      const selected = gewaehlt.filter(a => !vorhandeneIds.has(a.id));
+      const schonVorhanden = gewaehlt.length - selected.length;
+
+      if (uebernehmen !== false) {
+        const box = document.getElementById('finishMsg');
+        let text;
+        if (gewaehlt.length === 0)      text = I18N.t('onboarding.noneSelected');
+        else if (selected.length === 0) text = I18N.t('onboarding.addedNone');
+        else {
+          text = I18N.t('onboarding.addedCount', {n: selected.length});
+          if (schonVorhanden > 0) text += ' ' + I18N.t('onboarding.alreadyThere', {n: schonVorhanden});
+        }
+        if (box) { box.textContent = text; box.classList.add('show'); }
+        await new Promise(r => setTimeout(r, 1500));   // kurz lesen lassen
+      }
       // Bestehende Einstellungen einlesen und nur ergänzen — früher wurde die
       // komplette settings.json mit diesen drei Feldern überschrieben.
       let settings = {};

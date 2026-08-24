@@ -37,6 +37,12 @@ const DICT = {
 
   'settings.alwaysOnTop': { de: 'Immer im Vordergrund', en: 'Always on Top', es: 'Siempre visible', hi: 'हमेशा सबसे ऊपर', fr: 'Toujours au premier plan' },
   'settings.autostartWindows': { de: 'Autostart mit Windows', en: 'Start with Windows', es: 'Iniciar con Windows', hi: 'Windows के साथ शुरू करें', fr: 'Démarrer avec Windows' },
+  // Setup-Assistent: bereits vorhandene Programme + Rueckmeldung
+  'onboarding.known':        { de: 'vorhanden', en: 'already added', es: 'ya añadido', hi: 'पहले से जोड़ा गया', fr: 'déjà ajouté' },
+  'onboarding.addedCount':   { de: '{n} Programme hinzugefügt.', en: '{n} programs added.', es: '{n} programas añadidos.', hi: '{n} प्रोग्राम जोड़े गए।', fr: '{n} programmes ajoutés.' },
+  'onboarding.addedNone':    { de: 'Keine Programme hinzugefügt – alle waren bereits vorhanden.', en: 'No programs added — they were all there already.', es: 'No se añadió ninguno: ya estaban todos.', hi: 'कोई प्रोग्राम नहीं जोड़ा गया — सभी पहले से मौजूद थे।', fr: 'Aucun programme ajouté — ils étaient déjà tous là.' },
+  'onboarding.alreadyThere': { de: '({n} bereits vorhanden)', en: '({n} already there)', es: '({n} ya estaban)', hi: '({n} पहले से मौजूद)', fr: '({n} déjà présents)' },
+  'onboarding.noneSelected': { de: 'Keine Programme ausgewählt.', en: 'No programs selected.', es: 'Ningún programa seleccionado.', hi: 'कोई प्रोग्राम नहीं चुना गया।', fr: 'Aucun programme sélectionné.' },
   // Rueckmeldungen beim Bundle-Anlegen
   'bundles.needName':     { de: 'Bitte zuerst einen Namen eingeben.', en: 'Please enter a name first.', es: 'Introduce primero un nombre.', hi: 'कृपया पहले एक नाम दर्ज करें।', fr: 'Saisis d\'abord un nom.' },
   'bundles.needPrograms': { de: 'Bitte mindestens ein Programm anklicken.', en: 'Please select at least one program.', es: 'Selecciona al menos un programa.', hi: 'कृपया कम से कम एक प्रोग्राम चुनें।', fr: 'Sélectionne au moins un programme.' },
