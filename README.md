@@ -12,6 +12,24 @@ once — and Orbit Day Launcher takes care of the rest.
 
 ---
 
+## Download & install
+
+**[⬇ Download the latest release](https://github.com/PhillipLeh/orbit-day-launcher/releases/latest)**
+— no Rust, no Node.js, nothing else to set up. Just download, run, done.
+
+| File | Use this when |
+|---|---|
+| `orbit-day-launcher_<version>_x64-setup.exe` | **Normal install — this is the one you want** |
+| `Orbit-Day-Launcher-<version>.zip` | Everything in one archive: both installers, a readme (German + English), licence and screenshots |
+| `orbit-day-launcher_<version>_x64_en-US.msi` | Silent or managed deployment (company rollout) |
+
+On first launch Windows may warn about an unknown publisher, because the installer isn't
+code-signed yet — see [Troubleshooting](#troubleshooting) for the two clicks that get you
+past it.
+
+**Requirements:** Windows 10 or 11 (64-bit). Microsoft Edge WebView2 is already part of
+Windows 11; on older systems the installer fetches it automatically.
+
 ## Who is this for?
 
 - You have a fixed routine ("same 5 programs every morning") and don't want to click them
@@ -106,7 +124,9 @@ no build step, no framework.
 
 ## Build from source
 
-> A signed installer download is planned. Until then, build it locally.
+> **You don't need this to use the app** — grab the installer under
+> [Download & install](#download--install). Build from source only if you want to change
+> something or verify the binary yourself.
 
 **Requirements:** [Rust](https://www.rust-lang.org/tools/install) and
 [Node.js](https://nodejs.org/).
